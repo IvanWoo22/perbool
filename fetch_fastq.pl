@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use autodie;
 
 use IO::Zlib;
 
@@ -8,23 +9,22 @@ use IO::Zlib;
 # TODO: 2019/9/4 7:59 PM Add Get Option
 ##########################
 
-my $in_fq = IO::Zlib->new( $ARGV[0], "rb" );
-
-my %info;
-while (<$in_fq>) {
+my %target_name;
+while(<STDIN>){
     chomp;
-    chomp(my ($seq,$t,$qua) = <$in_fq>);
-    $info{$_} = $seq."\n".$t."\n".$qua."\n";
+    $target_name{$_}=0;
 }
-$in_fq->close;
 
-while (<STDIN>) {
-    chomp;
-    if (exists($info{$_})) {
-        print($_."\n".$info{$_});
-    }else{
-        warn("Sorry, we can't find $_.\n");
+my $in_fh = IO::Zlib->new( $ARGV[0], "rb" );
+
+while(<$in_fh>){
+    my $qname = $_;
+    my ($sequence, $t, $quality) = <$in_fh>;
+    $qname =~ /^@(\S+)/;
+    unless (exists $target_name{$1}) {
+        print "$qname$sequence$t$quality";
     }
 }
+$in_fh->close;
 
 __END__
