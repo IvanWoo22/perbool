@@ -13,7 +13,7 @@ my $in_fq = IO::Zlib->new( $ARGV[0], "rb" );
 my %info;
 while (<$in_fq>) {
     chomp;
-    chomp(my ($seq,$t,$qua) = <FQ>);
+    chomp(my ($seq,$t,$qua) = <$in_fq>);
     $info{$_} = $seq."\n".$t."\n".$qua."\n";
 }
 $in_fq->close;
