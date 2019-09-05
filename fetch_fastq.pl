@@ -2,22 +2,23 @@
 use strict;
 use warnings;
 
+use IO::Zlib;
+
 ##########################
 # TODO: 2019/9/4 7:59 PM Add Get Option
 ##########################
 
-open FETCH, "<", $ARGV[0];
-open FQ, "<", $ARGV[1];
+my $in_fq = IO::Zlib->new( $ARGV[0], "rb" );
 
 my %info;
-while (<FQ>) {
+while (<$in_fq>) {
     chomp;
     chomp(my ($seq,$t,$qua) = <FQ>);
     $info{$_} = $seq."\n".$t."\n".$qua."\n";
 }
-close(FQ);
+$in_fq->close;
 
-while (<FETCH>) {
+while (<STDIN>) {
     chomp;
     if (exists($info{$_})) {
         print($_."\n".$info{$_});
@@ -25,6 +26,5 @@ while (<FETCH>) {
         warn("Sorry, we can't find $_.\n");
     }
 }
-close(FETCH);
 
 __END__
