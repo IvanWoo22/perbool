@@ -25,7 +25,7 @@ close(FASTA);
 
 while (<SEG>) {
     s/\r?\n//;
-    my ($tit, $seg, $dir) = split(/\s+/,$_);
+    my ($tit, $seg, $dir, $name) = split(/\s+/,$_);
     my ($start, $end) = split(/-/,$seg);
 
     if ( exists($fasta{$tit}) ) {
@@ -34,7 +34,12 @@ while (<SEG>) {
         if ($dir eq "-") {
             $seq = SEQ_REV_COMP($seq);
         }
-        print ">$tit:$start-$end($dir)\n$seq\n";
+        if(defined($name)){
+            print ">$tit:$start-$end($dir)$name\n$seq\n";
+        }else{
+            print ">$tit:$start-$end($dir)\n$seq\n";
+        }
+
     }else{
         warn("Sorry, there is no such a segment: $_\n");
     }
