@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 use strict;
 use warnings FATAL => 'all';
-use autodie;
 
 sub SEQ_REV_COMP{
     my $temp = reverse shift;
+    $temp =~ tr/Uu/Tt/;
     return($temp =~ tr/AGCTagct/TCGAtcga/r);
 }
 
@@ -14,7 +14,7 @@ open(SEG,"<",$ARGV[1]);
 my %fasta;
 my $title_name;
 while (<FASTA>) {
-    if(/^>(.+)$/){
+    if(/^>(\S+)/){
         $title_name = $1;
     }else{
         $_ =~ s/\r?\n//;
@@ -25,19 +25,16 @@ close(FASTA);
 
 while (<SEG>) {
     s/\r?\n//;
-    my ($tit, $seg) = split(/\s+/,$_);
+    my ($tit, $seg, $dir) = split(/\s+/,$_);
     my ($start, $end) = split(/-/,$seg);
 
     if ( exists($fasta{$tit}) ) {
-        my $length = $end - $start + 1;
-        if ($length > 0) {
-            my $seq = substr($fasta{$tit}, $start-1, $length);
-            print ">$tit\n$seq\n";
-        }else{
-            my $seq = substr($fasta{$tit}, $end-1, -$length);
+        my $length = abs($end - $start) + 1;
+        my $seq = substr($fasta{$tit}, $start-1, $length);
+        if ($dir eq "-") {
             $seq = SEQ_REV_COMP($seq);
-            print ">$tit\n$seq\n";
         }
+        print ">$tit:$start-$end($dir)\n$seq\n";
     }else{
         warn("Sorry, there is no such a segment: $_\n");
     }
