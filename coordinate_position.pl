@@ -27,8 +27,8 @@ while(<STDIN>){
 }
 
 sub COORDINATE_POS{
-    my $index = shift;
-    my $site = shift;
+    my $index = $_[0];
+    my $site = $_[1];
     my $island;
     if($trans_dir{$index} eq "+"){
         $island = $trans_range{$index}->at($site);
@@ -44,11 +44,11 @@ open(IN_SAM, "<", $ARGV[0]);
 my %exist;
 while(<IN_SAM>){
     chomp;
-    my ($read_name, $trans_info, $site) = split(/\t/, $_, 3);
+    my ($read_name, $trans_info, $site) = split(/\s+/, $_, 3);
     $trans_info =~ /(ENST[0-9]+)/;
     my $abs_site = COORDINATE_POS($1, $site);
     my $read_abs_site = $read_name."\t".$abs_site;
-    unless(exists($exist{$read_abs_site}){
+    unless(exists($exist{$read_abs_site})){
         $exist{$read_abs_site} = 1;
         print("$_\n");
     }
