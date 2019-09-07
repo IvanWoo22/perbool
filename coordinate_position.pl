@@ -44,9 +44,10 @@ open(IN_SAM, "<", $ARGV[0]);
 my %exist;
 while(<IN_SAM>){
     chomp;
-    my ($read_name, $trans_info, $site) = split(/\s+/, $_, 3);
+    my ($read_name, $trans_info, $site) = split(/\s+/, $_);
     $trans_info =~ /(ENST[0-9]+)/;
-    my $abs_site = COORDINATE_POS($1, $site);
+    my $id = $1;
+    my $abs_site = COORDINATE_POS($id, $site);
     my $read_abs_site = $read_name."\t".$abs_site;
     unless(exists($exist{$read_abs_site})){
         $exist{$read_abs_site} = 1;
