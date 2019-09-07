@@ -45,7 +45,7 @@ my %exist;
 while(<IN_SAM>){
     chomp;
     my ($read_name, $trans_info, $site) = split(/\s+/, $_);
-    $trans_info =~ /(ENST[0-9]+)/;
+    $trans_info =~ /^(ENST[0-9]+)/;
     my $id = $1;
     my $abs_site = COORDINATE_POS($id, $site);
     my $read_abs_site = $read_name."\t".$abs_site;
