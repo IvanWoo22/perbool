@@ -9,4 +9,4 @@ Ivan Woo <wuyifanwd@hotmail.com>
 
 # LICENSE
 
-Copyright (C) 2019 -Iv\alphanWoo-
+Copyright &copy; 2019 -Iv&alpha;nWoo-
