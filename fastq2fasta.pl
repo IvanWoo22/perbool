@@ -4,6 +4,8 @@ use warnings FATAL => 'all';
 
 while(<STDIN>){
     $_ =~ s/^@/>/;
-    my ($seq, undef,undef) = <STDIN>;
+    my $seq = <STDIN>;
+    readline;
+    readline;
     print($_,$seq);
 }
