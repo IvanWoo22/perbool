@@ -3,9 +3,14 @@ use strict;
 use warnings FATAL => 'all';
 
 sub SEQ_REV_COMP {
-    my $temp = reverse shift;
-    $temp =~ tr/Uu/Tt/;
-    return ( $temp =~ tr/AGCTagct/TCGAtcga/r );
+    my $seq = reverse shift;
+    $seq =~ tr/Uu/Tt/;
+    return ( $seq =~ tr/AGCTagct/TCGAtcga/r );
+}
+
+sub SEQ_TR_TU {
+    my $seq = reverse shift;
+    return ( $seq =~ tr/Uu/Tt/ );
 }
 
 open( FASTA, "<", $ARGV[0] );
@@ -34,6 +39,9 @@ while (<SEG>) {
 
         if ( $dir eq "-" ) {
             $seq = SEQ_REV_COMP($seq);
+        }
+        else {
+            $seq = SEQ_TR_TU($seq);
         }
 
         if ( defined($name) ) {

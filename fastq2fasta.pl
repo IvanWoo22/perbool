@@ -9,3 +9,5 @@ while(<STDIN>){
     readline;
     print($_,$seq);
 }
+
+__END__
