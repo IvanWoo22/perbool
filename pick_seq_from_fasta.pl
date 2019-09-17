@@ -10,7 +10,7 @@ sub SEQ_REV_COMP {
 
 sub SEQ_TR_TU {
     my $seq = reverse shift;
-    return ( $seq =~ tr/Uu/Tt/ );
+    return ( $seq =~ tr/Uu/Tt/r );
 }
 
 open( FASTA, "<", $ARGV[0] );
