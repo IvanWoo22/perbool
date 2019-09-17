@@ -9,7 +9,7 @@ sub SEQ_REV_COMP {
 }
 
 sub SEQ_TR_TU {
-    my $seq = reverse shift;
+    my $seq = shift;
     return ( $seq =~ tr/Uu/Tt/r );
 }
 
