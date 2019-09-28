@@ -14,7 +14,7 @@ fetch_fasta.pl -- Get all sequences with the same searched string in a FastA fil
 
 =head1 SYNOPSIS
 
-    perl fetch_fasta.pl <-s string> [options]
+    perl fetch_fasta.pl -s protein_coding [options]
         Options:
             --help\-h   Brief help message
             --string\-s The sequences we want to fetch
