@@ -2,12 +2,12 @@
 use strict;
 use warnings FATAL => 'all';
 
-while(<STDIN>){
+while (<STDIN>) {
     $_ =~ s/^@/>/;
     my $seq = <STDIN>;
     readline;
     readline;
-    print($_,$seq);
+    print( $_, $seq );
 }
 
 __END__

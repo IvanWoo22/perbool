@@ -10,18 +10,18 @@ use IO::Zlib;
 ##########################
 
 my %target_name;
-while(<STDIN>){
+while (<STDIN>) {
     chomp;
-    $target_name{$_}=0;
+    $target_name{$_} = 0;
 }
 
 my $in_fh = IO::Zlib->new( $ARGV[0], "rb" );
 
-while(<$in_fh>){
+while (<$in_fh>) {
     my $qname = $_;
-    my ($sequence, $t, $quality) = <$in_fh>;
+    my ( $sequence, $t, $quality ) = <$in_fh>;
     $qname =~ /^@(\S+)/;
-    unless (exists $target_name{$1}) {
+    unless ( exists $target_name{$1} ) {
         print "$qname$sequence$t$quality";
     }
 }
