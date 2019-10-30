@@ -5,9 +5,9 @@ use warnings FATAL => 'all';
 my %fasta;
 my $current_seq = 0;
 
-open( FA, "<", $ARGV[0] );
-chomp( my $current_id = <FA> );
-while (<FA>) {
+open( my $fa, "<", $ARGV[0] );
+chomp( my $current_id = <$fa> );
+while (<$fa>) {
     chomp;
     my $current_line = $_;
     if ( $current_line =~ m/^>/ ) {
@@ -27,7 +27,7 @@ while (<FA>) {
         }
     }
 }
-close(FA);
+close($fa);
 print("$current_id\n$current_seq\n");
 
 __END__

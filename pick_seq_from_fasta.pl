@@ -3,14 +3,14 @@ use strict;
 use warnings FATAL => 'all';
 
 sub SEQ_REV_COMP {
-    my $seq = reverse shift;
-    $seq =~ tr/Uu/Tt/;
-    return ( $seq =~ tr/AGCTagct/TCGAtcga/r );
+    my $SEQ = reverse shift;
+    $SEQ =~ tr/Uu/Tt/;
+    return ( $SEQ =~ tr/AGCTagct/TCGAtcga/r );
 }
 
 sub SEQ_TR_TU {
-    my $seq = shift;
-    return ( $seq =~ tr/Uu/Tt/r );
+    my $SEQ = shift;
+    return ( $SEQ =~ tr/Uu/Tt/r );
 }
 
 open( FASTA, "<", $ARGV[0] );
