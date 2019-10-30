@@ -1,4 +1,4 @@
-# What can you get to know about *perbool*?
+# About *perbool*
 
 As an abbreviation of **PER**L **B**IO T**OOL**S, perbool is a perl toolkit created by Ivan Woo to do some bioinformatics tasks.
 
