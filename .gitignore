@@ -9,6 +9,8 @@
 
 /.idea
 
+/.DS_Store
+
 # Devel::Cover
 cover_db/
 

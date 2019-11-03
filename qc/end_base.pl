@@ -26,7 +26,7 @@ while (<$fq>) {
 }
 
 print(
-"A:\t$a_count\nG:\t$t_count\nC:\t$c_count\nT:\t$t_count\nTotal:\t$total_count\n"
+"A:\t$a_count\nG:\t$g_count\nC:\t$c_count\nT:\t$t_count\nTotal:\t$total_count\n"
 );
 
 __END__
