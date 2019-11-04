@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use strict;
 use warnings FATAL => 'all';
+use File::Basename;
+my $dirname = dirname(__FILE__);
 
 sub TAIL_BASE_COUNT {
     my %SEQ = @_;
@@ -125,11 +127,14 @@ foreach my $sample ( 0 .. $#ARGV - 1 ) {
     my $long  = 1;
     foreach my $seq_string ( keys(%seq) ) {
         my $length = length($seq_string);
-        if ( exists( $length_distribution{$ARGV[$sample]."\t".$length} )) {
-            $length_distribution{$ARGV[$sample]."\t".$length} += $seq{$seq_string};
+        if ( exists( $length_distribution{ $ARGV[$sample] . "\t" . $length } ) )
+        {
+            $length_distribution{ $ARGV[$sample] . "\t" . $length } +=
+              $seq{$seq_string};
         }
         else {
-            $length_distribution{$ARGV[$sample]."\t".$length} = $seq{$seq_string};
+            $length_distribution{ $ARGV[$sample] . "\t" . $length } =
+              $seq{$seq_string};
         }
         $short = $length if ( $short > $length );
         $long  = $length if ( $long < $length );
@@ -160,12 +165,12 @@ my $tail_t   = join( "\t", @tail_t );
 my $tail_sum = join( "\t", @tail_sum );
 
 my $reads_count  = join( "\t", @reads_count );
-my $length_range = join("\t,@length_range");
+my $length_range = join( "\t", @length_range );
 
-open( my $body,    ">", $ARGV[-1] . "_body.tsv" );
-open( my $head,    ">", $ARGV[-1] . "_head.tsv" );
-open( my $tail,    ">", $ARGV[-1] . "_tail.tsv" );
-open( my $summary, ">", $ARGV[-1] . "_summary.tsv" );
+open( my $body,        ">", $ARGV[-1] . "_body.tsv" );
+open( my $head,        ">", $ARGV[-1] . "_head.tsv" );
+open( my $tail,        ">", $ARGV[-1] . "_tail.tsv" );
+open( my $summary,     ">", $ARGV[-1] . "_summary.tsv" );
 open( my $length_dist, ">", $ARGV[-1] . "_length.tsv" );
 
 print $body ("$name\n$body_a\n$body_g\n$body_c\n$body_t\n$body_sum\n");
@@ -179,3 +184,8 @@ print $summary ("$name\n$reads_count\n$length_range\n");
 foreach ( sort { $a cmp $b } keys %length_distribution ) {
     print $length_dist ("$_\t$length_distribution{$_}\n");
 }
+
+
+system("Rscript $dirname/draw_picture.R $ARGV[-1]_body.tsv $ARGV[-1]_head.tsv $ARGV[-1]_tail.tsv $ARGV[-1]_length.tsv $ARGV[-1]_summary.tsv $ARGV[-1].pdf");
+
+__END__
