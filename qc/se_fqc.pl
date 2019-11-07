@@ -2,6 +2,7 @@
 use strict;
 use warnings FATAL => 'all';
 use File::Basename;
+use IO::Zlib;
 my $dirname = dirname(__FILE__);
 
 sub TAIL_BASE_COUNT {
@@ -94,14 +95,15 @@ my (
 );
 
 foreach my $sample ( 0 .. $#ARGV - 1 ) {
+    my $in_fh = IO::Zlib->new( $ARGV[$sample], "rb" )
+      or die "Can't open the file: $!";
     my %seq;
-    open( my $fq, "<", $ARGV[$sample] ) or die "Can't open the file: $!";
     $reads_count[$sample] = 0;
-    while (<$fq>) {
+    while (<$in_fh>) {
         $reads_count[$sample]++;
-        chomp( my $seq_string = <$fq> );
-        readline($fq);
-        readline($fq);
+        chomp( my $seq_string = <$in_fh> );
+        readline($in_fh);
+        readline($in_fh);
         if ( exists( $seq{$seq_string} ) ) {
             $seq{$seq_string}++;
         }
@@ -109,6 +111,7 @@ foreach my $sample ( 0 .. $#ARGV - 1 ) {
             $seq{$seq_string} = 1;
         }
     }
+    $in_fh->CLOSE;
 
     (
         $body_a[$sample], $body_g[$sample], $body_c[$sample],
@@ -185,7 +188,8 @@ foreach ( sort { $a cmp $b } keys %length_distribution ) {
     print $length_dist ("$_\t$length_distribution{$_}\n");
 }
 
-
-system("Rscript $dirname/draw_picture.R $ARGV[-1]_body.tsv $ARGV[-1]_head.tsv $ARGV[-1]_tail.tsv $ARGV[-1]_length.tsv $ARGV[-1]_summary.tsv $ARGV[-1].pdf");
+system(
+"Rscript $dirname/draw_picture.R $ARGV[-1]_body.tsv $ARGV[-1]_head.tsv $ARGV[-1]_tail.tsv $ARGV[-1]_length.tsv $ARGV[-1]_summary.tsv $ARGV[-1].pdf"
+);
 
 __END__
