@@ -64,6 +64,4 @@ while (<$in_fh>) {
     }
 }
 
-$in_fh->CLOSE;
-
 __END__
