@@ -111,7 +111,6 @@ foreach my $sample ( 0 .. $#ARGV - 1 ) {
             $seq{$seq_string} = 1;
         }
     }
-    $in_fh->CLOSE;
 
     (
         $body_a[$sample], $body_g[$sample], $body_c[$sample],
