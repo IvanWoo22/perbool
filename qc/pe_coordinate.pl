@@ -1,15 +1,16 @@
 #!/usr/bin/perl
 use strict;
 use warnings FATAL => 'all';
+use PerlIO::gzip;
 
 sub REV_COMP {
-    my $SEQ     = shift;
+    my $SEQ     = reverse(shift);
     my $R_C_SEQ = $SEQ =~ tr/AGTCagtc/TCAGtcag/r;
     return $R_C_SEQ;
 }
 
-open( my $r1, "<", $ARGV[0] ) or die "Can't open R1: $!";
-open( my $r2, "<", $ARGV[1] ) or die "Can't open R2: $!";
+open(my $r1,"<:gzip",$ARGV[0]) or die"$!";
+open(my $r2,"<:gzip",$ARGV[1]) or die"$!";
 
 while (<$r1>) {
     chomp( my $seq1 = <$r1> );

@@ -2,7 +2,8 @@
 use strict;
 use warnings FATAL => 'all';
 use File::Basename;
-use IO::Zlib;
+use PerlIO::gzip;
+
 my $dirname = dirname(__FILE__);
 
 sub TAIL_BASE_COUNT {
@@ -95,8 +96,7 @@ my (
 );
 
 foreach my $sample ( 0 .. $#ARGV - 1 ) {
-    my $in_fh = IO::Zlib->new( $ARGV[$sample], "rb" )
-      or die "Can't open the file: $!";
+    open(my $in_fh,"<:gzip",$ARGV[$sample]) or die"$!";
     my %seq;
     $reads_count[$sample] = 0;
     while (<$in_fh>) {
