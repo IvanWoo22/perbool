@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use autodie;
 
-use IO::Zlib;
+use PerlIO::gzip;
 
 ##########################
 # TODO: 2019/9/4 7:59 PM Add Get Option
@@ -15,7 +15,7 @@ while (<STDIN>) {
     $target_name{$_} = 0;
 }
 
-my $in_fh = IO::Zlib->new( $ARGV[0], "rb" );
+open(my $in_fh,"<:gzip",$ARGV[0]);
 
 while (<$in_fh>) {
     my $qname = $_;
