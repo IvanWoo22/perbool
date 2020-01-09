@@ -33,7 +33,7 @@ foreach my $char (@list) {
 }
 
 foreach (@info) {
-    print("$_\n");
+    print("$_");
 }
 
 __END__
