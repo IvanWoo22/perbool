@@ -48,7 +48,7 @@ while ( $i <= $#info ) {
     if ( $info[$i] =~ /$char/ ) {
         print( $info[$i] );
         my $j = 1;
-        until ( $info[ $i + $j ] =~ /^>/ ) {
+        until (( $i + $j > $#info ) or ( $info[ $i + $j ] =~ /^>/ )) {
             print( $info[ $i + $j ] );
             $j++;
         }
