@@ -17,7 +17,7 @@ while (<STDIN>) {
 }
 
 foreach my $seq ( keys(%count) ) {
-    print("$count{$seq}\n");
+    print("$seq\t$count{$seq}\n");
 }
 
 __END__
