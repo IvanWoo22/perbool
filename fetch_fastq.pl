@@ -15,7 +15,7 @@ while (<STDIN>) {
     $target_name{$_} = 0;
 }
 
-open(my $in_fh,"<:gzip",$ARGV[0]);
+open( my $in_fh, "<:gzip", $ARGV[0] );
 
 while (<$in_fh>) {
     my $qname = $_;
