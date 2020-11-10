@@ -4,6 +4,15 @@
 
 As an abbreviation of **PER**L **B**IO T**OOL**S, perbool is a perl toolkit created by Ivan Woo to do some bioinformatics tasks.
 
+## Usage
+
+```
+perl fetch_fasta.pl \
+    -f mature.fa \
+    --string "Spodoptera frugiperda" \
+    >sfr_mature.fa
+```
+
 ## Author
 
 Ivan Woo <<wuyifanwd@hotmail.com>>

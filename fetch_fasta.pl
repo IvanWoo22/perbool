@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use autodie;
 
 use Getopt::Long;
 
@@ -31,9 +32,9 @@ sub SEQ_TR_TU {
 
 my @info;
 if ( defined($in_fa) ) {
-    open FA, "<", $in_fa;
-    @info = <FA>;
-    close FA;
+    open my $FA, "<", $in_fa;
+    @info = <$FA>;
+    close($FA);
 }
 elsif ( defined($stdin) ) {
     @info = <>;
