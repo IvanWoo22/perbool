@@ -3,6 +3,24 @@ use strict;
 use warnings;
 use autodie;
 
+use Getopt::Long;
+
+=head1 NAME
+RBC.pl -- Perl script used to handle PCR sequencing data of RBC.
+=head1 SYNOPSIS
+    perl RBC.pl --index index.txt --count count.file
+        Options:
+            --help\-h   Brief help message
+            --index Index sequences of the samples
+            --count   The count file of sample reads
+=cut
+
+Getopt::Long::GetOptions(
+    'help|h'  => sub { Getopt::Long::HelpMessage(0) },
+    'index=s' => \my $ind_file,
+    'count=s' => \my $count_file,
+) or Getopt::Long::HelpMessage(1);
+
 sub E19D {
     my $seq = shift;
     my $ind = shift;
@@ -136,12 +154,11 @@ sub R175H {
     return $jud;
 }
 
-my @E19D_index;
-my @T790M_index;
-my @L858R_index;
-my @KG12_index;
-my @R175H_index;
-open( my $IND, "<", $ARGV[0] );
+my (
+    @E19D_index, @E19D_in,    @T790M_index, @T790M_in,    @L858R_index,
+    @L858R_in,   @KG12_index, @KG12_in,     @R175H_index, @R175H_in
+);
+open( my $IND, "<", $ind_file );
 while (<$IND>) {
     chomp;
     my @tmp = split( /\t/, $_ );
@@ -150,6 +167,11 @@ while (<$IND>) {
     push( @L858R_index, $tmp[2] );
     push( @KG12_index,  $tmp[3] );
     push( @R175H_index, $tmp[4] );
+    push( @E19D_in,     $#E19D_index ) if ( $tmp[0] ne 0 );
+    push( @T790M_in,    $#T790M_index ) if ( $tmp[1] ne 0 );
+    push( @L858R_in,    $#L858R_index ) if ( $tmp[2] ne 0 );
+    push( @KG12_in,     $#KG12_index ) if ( $tmp[3] ne 0 );
+    push( @R175H_in,    $#R175H_index ) if ( $tmp[4] ne 0 );
 }
 close($IND);
 
@@ -170,40 +192,48 @@ foreach my $id ( 0 .. $#E19D_index ) {
     $R175H_MU[$id] = 0;
 }
 
-open( my $COUNT, "<", $ARGV[1] );
+open( my $COUNT, "<", $count_file );
 while (<$COUNT>) {
     chomp;
     my ( $seq, $sum ) = split( /\t/, $_ );
-    foreach my $id ( 0 .. $#E19D_index ) {
-        my $E19D  = E19D( $seq, $E19D_index[$id] );
-        my $T790M = T790M( $seq, $T790M_index[$id] );
-        my $L858R = L858R( $seq, $L858R_index[$id] );
-        my $KG12  = KG12( $seq, $KG12_index[$id] );
-        my $R175H = R175H( $seq, $R175H_index[$id] );
+    foreach my $id (@E19D_in) {
+        my $E19D = E19D( $seq, $E19D_index[$id] );
         if ( $E19D == 2 ) {
             $E19D_WT[$id] += $sum;
         }
         elsif ( $E19D == 1 ) {
             $E19D_MU[$id] += $sum;
         }
+    }
+    foreach my $id (@T790M_in) {
+        my $T790M = T790M( $seq, $T790M_index[$id] );
         if ( $T790M == 2 ) {
             $T790M_WT[$id] += $sum;
         }
         elsif ( $T790M == 1 ) {
             $T790M_MU[$id] += $sum;
         }
+    }
+    foreach my $id (@L858R_in) {
+        my $L858R = L858R( $seq, $L858R_index[$id] );
         if ( $L858R == 2 ) {
             $L858R_WT[$id] += $sum;
         }
         elsif ( $L858R == 1 ) {
             $L858R_MU[$id] += $sum;
         }
+    }
+    foreach my $id (@KG12_in) {
+        my $KG12 = KG12( $seq, $KG12_index[$id] );
         if ( $KG12 == 2 ) {
             $KG12_WT[$id] += $sum;
         }
         elsif ( $KG12 == 1 ) {
             $KG12_MU[$id] += $sum;
         }
+    }
+    foreach my $id (@R175H_in) {
+        my $R175H = R175H( $seq, $R175H_index[$id] );
         if ( $R175H == 2 ) {
             $R175H_WT[$id] += $sum;
         }
@@ -212,26 +242,67 @@ while (<$COUNT>) {
         }
     }
 }
+close($COUNT);
 
 foreach my $id ( 0 .. $#E19D_index ) {
-    print("$E19D_WT[$id]\n$E19D_MU[$id]\n");
+    my $prop;
+    if ( $E19D_WT[$id] + $E19D_MU[$id] > 0 ) {
+        $prop = sprintf( "%.4f",
+            $E19D_MU[$id] / ( $E19D_WT[$id] + $E19D_MU[$id] ) * 100 );
+    }
+    else {
+        $prop = 0;
+    }
+    print("$E19D_WT[$id]\n$E19D_MU[$id]\n$prop%\n");
 }
 print("\n");
 foreach my $id ( 0 .. $#T790M_index ) {
-    print("$T790M_WT[$id]\n$T790M_MU[$id]\n");
+    my $prop;
+    if ( $T790M_WT[$id] + $T790M_MU[$id] > 0 ) {
+        $prop = sprintf( "%.4f",
+            $T790M_MU[$id] / ( $T790M_WT[$id] + $T790M_MU[$id] ) * 100 );
+    }
+    else {
+        $prop = 0;
+    }
+    print("$T790M_WT[$id]\n$T790M_MU[$id]\n$prop%\n");
 }
 print("\n");
 foreach my $id ( 0 .. $#L858R_index ) {
-    print("$L858R_WT[$id]\n$L858R_MU[$id]\n");
+    my $prop;
+    if ( $L858R_WT[$id] + $L858R_MU[$id] > 0 ) {
+        $prop = sprintf( "%.4f",
+            $L858R_MU[$id] / ( $L858R_WT[$id] + $L858R_MU[$id] ) * 100 );
+    }
+    else {
+        $prop = 0;
+    }
+    print("$L858R_WT[$id]\n$L858R_MU[$id]\n$prop%\n");
 }
 print("\n");
 foreach my $id ( 0 .. $#KG12_index ) {
-    print("$KG12_WT[$id]\n$KG12_MU[$id]\n");
+    my $prop;
+    if ( $KG12_WT[$id] + $KG12_MU[$id] > 0 ) {
+        $prop = sprintf( "%.4f",
+            $KG12_MU[$id] / ( $KG12_WT[$id] + $KG12_MU[$id] ) * 100 );
+    }
+    else {
+        $prop = 0;
+    }
+    print("$KG12_WT[$id]\n$KG12_MU[$id]\n$prop%\n");
 }
 print("\n");
 foreach my $id ( 0 .. $#R175H_index ) {
-    print("$R175H_WT[$id]\n$R175H_MU[$id]\n");
+    my $prop;
+    if ( $R175H_WT[$id] + $R175H_MU[$id] > 0 ) {
+        $prop = sprintf( "%.4f",
+            $R175H_MU[$id] / ( $R175H_WT[$id] + $R175H_MU[$id] ) * 100 );
+    }
+    else {
+        $prop = 0;
+    }
+    print("$R175H_WT[$id]\n$R175H_MU[$id]\n$prop%\n");
 }
-print("\n");
+print("\n\n");
 
 __END__
