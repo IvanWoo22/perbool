@@ -42,44 +42,44 @@ GACGAC	GACGAC	GACGAC	GACGAC	GTGGCC
 
 ```bash
 perl RBC.pl \
-    index.txt \
-    NJU8XXX.count \
+    --index index.txt \
+    --count NJU8XXX.count \
     >NJU8XXX.txt
 ```
 
 `NJU8XXX.txt` 内容为每种PCR产物的野生型和突变型统计，示例如下
 
 ```
-4029        ### 代表第一组EGFR-19del的野生型reads数；
-2           ### 代表第一组EGFR-19del的突变型reads数；
-1456778     ### 代表第一组EGFR-T790M的野生型reads数；
-0           ### 代表第一组EGFR-T790M的突变型reads数；
-2393857     ### 代表第一组EGFR-L858R的野生型reads数；
-1           ### 代表第一组EGFR-L858R的突变型reads数；
-1098209     ### 代表第一组KRAS-G12/13的野生型reads数；
-1197        ### 代表第一组KRAS-G12/13的突变型reads数；
-745637      ### 代表第一组TP53-R175H的野生型reads数；
-2           ### 代表第一组TP53-R175H的突变型reads数；
+4029        ### 代表第1组EGFR-19del的野生型reads数；
+2           ### 代表第1组EGFR-19del的突变型reads数；
+1456778     ### 代表第2组EGFR-19del的野生型reads数；
+0           ### 代表第2组EGFR-19del的突变型reads数；
+2393857     ### 代表第3组EGFR-19del的野生型reads数；
+1           ### 代表第3组EGFR-19del的突变型reads数；
 
-7057        ### 第二组由此开始
+
+7057        ### 代表第1组EGFR-T790M的野生型reads数；
 2
 566736
 751
 1871968
 1028
-1061032
-818
-685042
-360
 
-1           ### 第三组由此开始
+
+1           ### 代表第1组EGFR-L858R的野生型reads数；
 0
 920922
 865
 2515331
 3621
-1230124
-1485
-1197746
-1701
+
+
+1           ### 代表第1组KRAS-G12/13的野生型reads数；
+0
+920922
+865
+2515331
+3621
+
+......
 ```
