@@ -25,11 +25,6 @@ Getopt::Long::GetOptions(
     'rna2dna'    => \my $rna2dna,
 ) or Getopt::Long::HelpMessage(1);
 
-sub SEQ_TR_TU {
-    my $SEQ = shift;
-    return ( $SEQ =~ tr/Uu/Tt/r );
-}
-
 my @info;
 if ( defined($in_fa) ) {
     open my $FA, "<", $in_fa;
@@ -40,7 +35,12 @@ elsif ( defined($stdin) ) {
     @info = <>;
 }
 else {
-    die("You should provide FastA!");
+    die("==> You should provide FastA!");
+}
+
+sub SEQ_TR_TU {
+    my $SEQ = shift;
+    return ( $SEQ =~ tr/Uu/Tt/r );
 }
 
 my $i = 0;
