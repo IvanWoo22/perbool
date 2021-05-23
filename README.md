@@ -18,6 +18,14 @@ cat input.sam | perl
 perl filter_fastq.pl \
     --max 30 --min 20 \
     -i input.fq -o output.fq
+    
+perl fastqKmer.pl \
+    -K 20 \
+    -i test.fq -o test.out.fq
+    
+perl fastq_randomsampling.pl \
+    -q 100 \
+    -i test.fq -o test.out.fq
 ```
 
 ## Author
