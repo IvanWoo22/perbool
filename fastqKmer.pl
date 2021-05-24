@@ -41,6 +41,7 @@ else {
 while (<$in_fh>) {
     my $qname = $_;
     chomp($qname);
+    my @qntemp = split(/\s+/, $qname);
     my $sequence = <$in_fh>;
     chomp($sequence);
     my $t = <$in_fh>;
@@ -52,7 +53,7 @@ while (<$in_fh>) {
         my $seq = SPLITSTR( $sequence, $kmer );
         my $qua = SPLITSTR( $quality,  $kmer );
         foreach my $i ( 0 .. $#{$seq} ) {
-            print $out_fh "$qname:$i\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
+            print $out_fh "$qntemp[0]:$i @qntemp[1..$#qntemp]\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
         }
     }
 }
