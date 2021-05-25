@@ -32,16 +32,19 @@ my @qname_id;
 my %reads;
 
 while (<$in_fh>) {
+    chomp;
     my $qname = $_;
     my $sequence = <$in_fh>;
     my $t = <$in_fh>;
     my $quality = <$in_fh>;
     push(@qname_id, $qname);
-    $reads{$qname} = "$qname$sequence$t$quality";
+    $reads{$qname} = "$sequence$t$quality";
 }
 
-foreach (1..$quantity){
-    print $out_fh "$reads{$qname_id[int(rand($#qname_id))]}";
+foreach my $i (1..$quantity){
+    my $random_id = int(rand($#qname_id));
+    my @qntemp = split(/\s+/, $qname_id[$random_id]);
+    print $out_fh "$qntemp[0]:$i @qntemp[1..$#qntemp]\n$reads{$qname_id[$random_id]}";
 }
 
 __END__
