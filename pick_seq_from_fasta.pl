@@ -1,6 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
-use warnings FATAL => 'all';
+use warnings;
+use autodie;
 
 sub SEQ_REV_COMP {
     my $SEQ = reverse shift;
@@ -13,12 +14,12 @@ sub SEQ_TR_TU {
     return ( $SEQ =~ tr/Uu/Tt/r );
 }
 
-open( FASTA, "<", $ARGV[0] );
-open( SEG,   "<", $ARGV[1] );
+open( my $FASTA, "<", $ARGV[0] );
+open( my $SEG,   "<", $ARGV[1] );
 
 my %fasta;
 my $title_name;
-while (<FASTA>) {
+while (<$FASTA>) {
     if (/^>(\S+)/) {
         $title_name = $1;
     }
@@ -27,9 +28,9 @@ while (<FASTA>) {
         $fasta{$title_name} .= $_;
     }
 }
-close(FASTA);
+close($FASTA);
 
-while (<SEG>) {
+while (<$SEG>) {
     s/\r?\n//;
     my ( $chr, $start, $end, $dir, $name ) = split( /\s+/, $_ );
 
@@ -56,6 +57,6 @@ while (<SEG>) {
         warn("Sorry, there is no such a segment: $_\n");
     }
 }
-close(SEG);
+close($SEG);
 
 __END__
