@@ -5,11 +5,11 @@ use autodie;
 use IO::Zlib;
 use Getopt::Long;
 
-sub SPLITSTR {
+sub SPLIT_STR {
     my ( $STR, $LENGTH ) = @_;
-    my $STRLENGTH = length $STR;
+    my $STR_LENGTH = length $STR;
     my @READS;
-    for ( my $SEED = 0 ; $SEED + $LENGTH <= $STRLENGTH ; $SEED += 1 ) {
+    for ( my $SEED = 0 ; $SEED + $LENGTH <= $STR_LENGTH ; $SEED += 1 ) {
         push @READS, substr( $STR, $SEED, $LENGTH );
     }
     return \@READS;
@@ -50,8 +50,8 @@ while (<$in_fh>) {
     chomp($quality);
 
     if ( $kmer <= length($sequence) ) {
-        my $seq = SPLITSTR( $sequence, $kmer );
-        my $qua = SPLITSTR( $quality,  $kmer );
+        my $seq = SPLIT_STR( $sequence, $kmer );
+        my $qua = SPLIT_STR( $quality,  $kmer );
         foreach my $i ( 0 .. $#{$seq} ) {
             print $out_fh "$qntemp[0]:$i @qntemp[1..$#qntemp]\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
         }
