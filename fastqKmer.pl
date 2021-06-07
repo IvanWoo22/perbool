@@ -5,6 +5,14 @@ use autodie;
 use IO::Zlib;
 use Getopt::Long;
 
+Getopt::Long::GetOptions(
+    'help|h'   => sub { Getopt::Long::HelpMessage(0) },
+    'in|i=s'   => \my $in_fq,
+    'kmer|K=s' => \my $kmer,
+    'prefix=s' => \my $prefix,
+    'out|o=s'  => \my $out_fq,
+) or Getopt::Long::HelpMessage(1);
+
 sub SPLIT_STR {
     my ( $STR, $LENGTH ) = @_;
     my $STR_LENGTH = length $STR;
@@ -14,14 +22,6 @@ sub SPLIT_STR {
     }
     return \@READS;
 }
-
-Getopt::Long::GetOptions(
-    'help|h'   => sub { Getopt::Long::HelpMessage(0) },
-    'in|i=s'   => \my $in_fq,
-    'kmer|K=s' => \my $kmer,
-    'prefix=s' => \my $prefix,
-    'out|o=s'  => \my $out_fq,
-) or Getopt::Long::HelpMessage(1);
 
 my $in_fh;
 if ( $in_fq =~ /.gz$/ ) {
@@ -39,8 +39,10 @@ else {
     open( $out_fh, ">", $out_fq );
 }
 
-if ( undef($prefix) ) {
+if ( !defined $prefix) {
     $prefix = "";
+} else{
+    $prefix = ":".$prefix;
 }
 
 while (<$in_fh>) {
@@ -59,7 +61,7 @@ while (<$in_fh>) {
         my $qua = SPLIT_STR( $quality,  $kmer );
         foreach my $i ( 0 .. $#{$seq} ) {
             print $out_fh
-"$qntemp[0]:$prefix:$i @qntemp[1..$#qntemp]\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
+"$qntemp[0]$prefix:$i @qntemp[1..$#qntemp]\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
         }
     }
 }
