@@ -68,8 +68,8 @@ while (<$in_fh>) {
         my ( $qua1, $qua2 ) = SPLIT_STR( $quality, $length );
         $seq2 = SEQ_REV_COMP($seq2);
         $qua2 = reverse($qua2);
-        print $out_fh1 "$qntemp[0] 1 @qntemp[1..$#qntemp]\n$seq1\n$t\n$$qua1\n";
-        print $out_fh2 "$qntemp[0] 2 @qntemp[1..$#qntemp]\n$seq2\n$t\n$$qua2\n";
+        print $out_fh1 "$qntemp[0] 1 @qntemp[1..$#qntemp]\n$seq1\n$t\n$qua1\n";
+        print $out_fh2 "$qntemp[0] 2 @qntemp[1..$#qntemp]\n$seq2\n$t\n$qua2\n";
 
     }
 }
