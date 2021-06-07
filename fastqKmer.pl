@@ -19,6 +19,7 @@ Getopt::Long::GetOptions(
     'help|h'   => sub { Getopt::Long::HelpMessage(0) },
     'in|i=s'   => \my $in_fq,
     'kmer|K=s' => \my $kmer,
+    'prefix=s' => \my $prefix,
     'out|o=s'  => \my $out_fq,
 ) or Getopt::Long::HelpMessage(1);
 
@@ -38,10 +39,14 @@ else {
     open( $out_fh, ">", $out_fq );
 }
 
+if ( undef($prefix) ) {
+    $prefix = "";
+}
+
 while (<$in_fh>) {
     my $qname = $_;
     chomp($qname);
-    my @qntemp = split(/\s+/, $qname);
+    my @qntemp   = split( /\s+/, $qname );
     my $sequence = <$in_fh>;
     chomp($sequence);
     my $t = <$in_fh>;
@@ -53,7 +58,8 @@ while (<$in_fh>) {
         my $seq = SPLIT_STR( $sequence, $kmer );
         my $qua = SPLIT_STR( $quality,  $kmer );
         foreach my $i ( 0 .. $#{$seq} ) {
-            print $out_fh "$qntemp[0]:$i @qntemp[1..$#qntemp]\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
+            print $out_fh
+"$qntemp[0]:$prefix:$i @qntemp[1..$#qntemp]\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
         }
     }
 }
