@@ -2,37 +2,62 @@
 use strict;
 use warnings;
 use autodie;
+use Getopt::Long;
 
-sub SEQ_REV_COMP {
-    my $SEQ = reverse shift;
-    $SEQ =~ tr/Uu/Tt/;
-    return ( $SEQ =~ tr/AGCTagct/TCGAtcga/r );
-}
-
-sub SEQ_TR_TU {
-    my $SEQ = shift;
-    return ( $SEQ =~ tr/Uu/Tt/r );
-}
-
-open( my $FASTA, "<", $ARGV[0] );
-open( my $SEG,   "<", $ARGV[1] );
+Getopt::Long::GetOptions(
+    'help|h'  => sub { Getopt::Long::HelpMessage(0) },
+    'seq|s=s' => \my $in_seq,
+    'in|i=s'  => \my $in_list,
+    'fa|f=s'  => \my $in_fa,
+    'stdin'   => \my $stdin,
+) or Getopt::Long::HelpMessage(1);
 
 my %fasta;
 my $chr_name;
-while (<$FASTA>) {
-    if (/^>(\S+)/) {
-        $chr_name = $1;
+if ( defined($in_fa) ) {
+    open my $FA, "<", $in_fa;
+    while (<$FA>) {
+        if (/^>(\S+)/) {
+            $chr_name = $1;
+        }
+        else {
+            $_ =~ s/\r?\n//;
+            $fasta{$chr_name} .= $_;
+        }
     }
-    else {
-        $_ =~ s/\r?\n//;
-        $fasta{$chr_name} .= $_;
+    close($FA);
+}
+elsif ( defined($stdin) ) {
+    while (<>) {
+        if (/^>(\S+)/) {
+            $chr_name = $1;
+        }
+        else {
+            $_ =~ s/\r?\n//;
+            $fasta{$chr_name} .= $_;
+        }
     }
 }
-close($FASTA);
+else {
+    die("==> You should provide the FASTA!!\n");
+}
 
-while (<$SEG>) {
-    s/\r?\n//;
-    my $seq = $_;
+if ( defined($in_list) ) {
+    open( my $SEG, "<", $in_list );
+    while (<$SEG>) {
+        s/\r?\n//;
+        my $seq = $_;
+        foreach my $chr ( keys(%fasta) ) {
+            while ( $fasta{$chr} =~ /$seq/g ) {
+                my $p = pos( $fasta{$chr} );
+                print "$chr\t$p\n";
+            }
+        }
+    }
+    close($SEG);
+}
+elsif ( defined($in_seq) ) {
+    my $seq = $in_seq;
     foreach my $chr ( keys(%fasta) ) {
         while ( $fasta{$chr} =~ /$seq/g ) {
             my $p = pos( $fasta{$chr} );
@@ -40,6 +65,7 @@ while (<$SEG>) {
         }
     }
 }
-close($SEG);
-
+else {
+    die("==> You should provide the SEQ!!\n");
+}
 __END__
