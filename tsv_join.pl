@@ -11,46 +11,22 @@ my %table2;
 my $col_num1;
 my $col_num2;
 
-sub NEW_TBL {
-    my ( $TBL, $NAME, $CONT ) = @_;
-    @{ ${$TBL}{$NAME} } = @{$CONT};
-    return ($TBL);
-}
-
-sub ADD_COL {
-    my ( $TBL1, $TBL2, $WIDTH1, $WIDTH2, $NAME ) = @_;
-    if ( ( exists( ${$TBL1}{$NAME} ) ) and ( exists( ${$TBL2}{$NAME} ) ) ) {
-        push( @{ ${$TBL1}{$NAME} }, @{ ${$TBL2}{$NAME} } );
-    }
-    elsif ( exists( ${$TBL2}{$NAME} ) ) {
-        @{ ${$TBL1}{$NAME} }[ 0 .. $WIDTH1 - 1 ] = ("N/A") x $WIDTH1;
-        push( @{ ${$TBL1}{$NAME} }, @{ ${$TBL2}{$NAME} } );
-    }
-    elsif ( exists( ${$TBL1}{$NAME} ) ) {
-        @{ ${$TBL1}{$NAME} }[ $WIDTH1 .. $WIDTH1 + $WIDTH2 - 1 ] =
-          ("N/A") x $WIDTH2;
-    }
-    return ($TBL1);
-}
-
-while (<$TSV1>) {
+my @tsv1 = <$TSV1>;
+foreach (@tsv1) {
     chomp;
     my @tbl  = split /\s+/;
     my $name = $tbl[0];
     $col_num1 = $#tbl;
-    my @cont = @tbl[ 1 .. $col_num1 ];
-    my $temp = NEW_TBL( \%table1, $name, \@cont );
-    %table1 = %{$temp};
+    $table1{$name} = join( "\t", @tbl[ 1 .. $col_num1 ] );
 }
 
-while (<$TSV2>) {
+my @tsv2 = <$TSV2>;
+foreach (@tsv2) {
     chomp;
     my @tbl  = split /\s+/;
     my $name = $tbl[0];
     $col_num2 = $#tbl;
-    my @cont = @tbl[ 1 .. $col_num2 ];
-    my $temp = NEW_TBL( \%table2, $name, \@cont );
-    %table2 = %{$temp};
+    $table2{$name} = join( "\t", @tbl[ 1 .. $col_num2 ] );
 }
 
 my %count;
@@ -59,12 +35,20 @@ foreach my $e ( keys(%table1), keys(%table2) ) {
 }
 
 for my $key ( keys %count ) {
-    my $temp = ADD_COL( \%table1, \%table2, $col_num1, $col_num2, $key );
-    %table1 = %{$temp};
+    if ( ( exists( $table1{$key} ) ) and ( exists( $table2{$key} ) ) ) {
+        $table1{$key} .= "\t" . $table2{$key};
+    }
+    elsif ( exists( $table2{$key} ) ) {
+        $table1{$key} = join( "\t", ("N/A") x $col_num1 );
+        $table1{$key} .= "\t" . $table2{$key};
+    }
+    elsif ( exists( $table1{$key} ) ) {
+        $table1{$key} .= "\t" . join( "\t", ("N/A") x $col_num2 );
+    }
 }
 
 for my $key ( keys %table1 ) {
-    print("$key\t@{$table1{$key}}\n");
+    print("$key\t$table1{$key}\n");
 }
 
 __END__
