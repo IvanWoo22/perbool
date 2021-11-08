@@ -27,26 +27,27 @@ sub SEQ_REV_COMP {
     return ( $SEQ =~ tr/NAGCTagct/NTCGAtcga/r );
 }
 
-sub E19D {
-    my $SEQ    = shift;
-    my $SEQ_RC = SEQ_REV_COMP($SEQ);
-    my $FIND   = shift;
-    my $RIND   = shift;
-    my @SEQ    = split( //, $SEQ );
-    my @SEQ_RC = split( //, $SEQ_RC );
-    my @FIND   = split( //, $FIND );
-    my @RIND   = split( //, $RIND );
-    my $JUG    = 0;
-    my ( $F_MATCH1, $R_MATCH1, $F_MATCH2, $R_MATCH2 ) = ( 0, 0, 0, 0 );
-
-    foreach ( 0 .. 5 ) {
-        $F_MATCH1++ if $SEQ[$_] eq $FIND[$_];
-        $F_MATCH2++ if $SEQ[ $_ - 6 ] eq $RIND[$_];
-        $R_MATCH1++ if $SEQ_RC[$_] eq $FIND[$_];
-        $R_MATCH2++ if $SEQ_RC[ $_ - 6 ] eq $RIND[$_];
+sub REG {
+    my $SEQ = shift;
+    my %SUB_PATS;
+    for my $I ( 0 .. length($SEQ) - 1 ) {
+        my $SUB_PAT =
+          join( '', substr( $SEQ, 0, $I ), '.', substr( $SEQ, $I + 1 ) );
+        $SUB_PATS{$SUB_PAT} = 1;
     }
+    my $PAT = join( '|', keys(%SUB_PATS) );
+    return ($PAT);
+}
 
-    if ( ( $F_MATCH1 >= 5 ) && ( $F_MATCH2 >= 5 ) ) {
+sub E19D {
+    my $SEQ      = shift;
+    my $SEQ_RC   = SEQ_REV_COMP($SEQ);
+    my $FIND     = shift;
+    my $RIND     = shift;
+    my $FIND_REG = REG($FIND);
+    my $RIND_REG = REG($RIND);
+    my $JUG      = 0;
+    if ( ( $SEQ =~ /$FIND_REG/ ) && ( $SEQ =~ /$RIND_REG/ ) ) {
         if ( $SEQ =~ /TATCAAGGAATTAAGAGAAGCAACATCTCCGAAAGC/ ) {
             $JUG = 2;
         }
@@ -69,7 +70,7 @@ sub E19D {
         }
 
     }
-    elsif ( ( $R_MATCH1 >= 5 ) && ( $R_MATCH2 >= 5 ) ) {
+    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /TATCAAGGAATTAAGAGAAGCAACATCTCCGAAAGC/ ) {
             $JUG = 2;
         }
@@ -95,25 +96,14 @@ sub E19D {
 }
 
 sub T790M {
-    my $SEQ    = shift;
-    my $SEQ_RC = SEQ_REV_COMP($SEQ);
-    my $FIND   = shift;
-    my $RIND   = shift;
-    my @SEQ    = split( //, $SEQ );
-    my @SEQ_RC = split( //, $SEQ_RC );
-    my @FIND   = split( //, $FIND );
-    my @RIND   = split( //, $RIND );
-    my $JUG    = 0;
-    my ( $F_MATCH1, $R_MATCH1, $F_MATCH2, $R_MATCH2 ) = ( 0, 0, 0, 0 );
-
-    foreach ( 0 .. 5 ) {
-        $F_MATCH1++ if $SEQ[$_] eq $FIND[$_];
-        $F_MATCH2++ if $SEQ[ $_ - 6 ] eq $RIND[$_];
-        $R_MATCH1++ if $SEQ_RC[$_] eq $FIND[$_];
-        $R_MATCH2++ if $SEQ_RC[ $_ - 6 ] eq $RIND[$_];
-    }
-
-    if ( ( $F_MATCH1 >= 5 ) && ( $F_MATCH2 >= 5 ) ) {
+    my $SEQ      = shift;
+    my $SEQ_RC   = SEQ_REV_COMP($SEQ);
+    my $FIND     = shift;
+    my $RIND     = shift;
+    my $FIND_REG = REG($FIND);
+    my $RIND_REG = REG($RIND);
+    my $JUG      = 0;
+    if ( ( $SEQ =~ /$FIND_REG/ ) && ( $SEQ =~ /$RIND_REG/ ) ) {
         if ( $SEQ =~ /CTCATCACGCAGCTC/ ) {
             $JUG = 2;
         }
@@ -121,7 +111,7 @@ sub T790M {
             $JUG = 1;
         }
     }
-    elsif ( ( $R_MATCH1 >= 5 ) && ( $R_MATCH2 >= 5 ) ) {
+    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /CTCATCACGCAGCTC/ ) {
             $JUG = 2;
         }
@@ -133,25 +123,14 @@ sub T790M {
 }
 
 sub L858R {
-    my $SEQ    = shift;
-    my $SEQ_RC = SEQ_REV_COMP($SEQ);
-    my $FIND   = shift;
-    my $RIND   = shift;
-    my @SEQ    = split( //, $SEQ );
-    my @SEQ_RC = split( //, $SEQ_RC );
-    my @FIND   = split( //, $FIND );
-    my @RIND   = split( //, $RIND );
-    my $JUG    = 0;
-    my ( $F_MATCH1, $R_MATCH1, $F_MATCH2, $R_MATCH2 ) = ( 0, 0, 0, 0 );
-
-    foreach ( 0 .. 5 ) {
-        $F_MATCH1++ if $SEQ[$_] eq $FIND[$_];
-        $F_MATCH2++ if $SEQ[ $_ - 6 ] eq $RIND[$_];
-        $R_MATCH1++ if $SEQ_RC[$_] eq $FIND[$_];
-        $R_MATCH2++ if $SEQ_RC[ $_ - 6 ] eq $RIND[$_];
-    }
-
-    if ( ( $F_MATCH1 >= 5 ) && ( $F_MATCH2 >= 5 ) ) {
+    my $SEQ      = shift;
+    my $SEQ_RC   = SEQ_REV_COMP($SEQ);
+    my $FIND     = shift;
+    my $RIND     = shift;
+    my $FIND_REG = REG($FIND);
+    my $RIND_REG = REG($RIND);
+    my $JUG      = 0;
+    if ( ( $SEQ =~ /$FIND_REG/ ) && ( $SEQ =~ /$RIND_REG/ ) ) {
         if ( $SEQ =~ /TTTGGGCTGGCCAAA/ ) {
             $JUG = 2;
         }
@@ -159,7 +138,7 @@ sub L858R {
             $JUG = 1;
         }
     }
-    elsif ( ( $R_MATCH1 >= 5 ) && ( $R_MATCH2 >= 5 ) ) {
+    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /TTTGGGCTGGCCAAA/ ) {
             $JUG = 2;
         }
@@ -171,25 +150,14 @@ sub L858R {
 }
 
 sub KG12 {
-    my $SEQ    = shift;
-    my $SEQ_RC = SEQ_REV_COMP($SEQ);
-    my $FIND   = shift;
-    my $RIND   = shift;
-    my @SEQ    = split( //, $SEQ );
-    my @SEQ_RC = split( //, $SEQ_RC );
-    my @FIND   = split( //, $FIND );
-    my @RIND   = split( //, $RIND );
-    my $JUG    = 0;
-    my ( $F_MATCH1, $R_MATCH1, $F_MATCH2, $R_MATCH2 ) = ( 0, 0, 0, 0 );
-
-    foreach ( 0 .. 5 ) {
-        $F_MATCH1++ if $SEQ[$_] eq $FIND[$_];
-        $F_MATCH2++ if $SEQ[ $_ - 6 ] eq $RIND[$_];
-        $R_MATCH1++ if $SEQ_RC[$_] eq $FIND[$_];
-        $R_MATCH2++ if $SEQ_RC[ $_ - 6 ] eq $RIND[$_];
-    }
-
-    if ( ( $F_MATCH1 >= 5 ) && ( $F_MATCH2 >= 5 ) ) {
+    my $SEQ      = shift;
+    my $SEQ_RC   = SEQ_REV_COMP($SEQ);
+    my $FIND     = shift;
+    my $RIND     = shift;
+    my $FIND_REG = REG($FIND);
+    my $RIND_REG = REG($RIND);
+    my $JUG      = 0;
+    if ( ( $SEQ =~ /$FIND_REG/ ) && ( $SEQ =~ /$RIND_REG/ ) ) {
         if ( $SEQ =~ /TGGAGCTGGTGGCGTA/ ) {
             $JUG = 2;
         }
@@ -201,7 +169,7 @@ sub KG12 {
             $JUG = 1;
         }
     }
-    elsif ( ( $R_MATCH1 >= 5 ) && ( $R_MATCH2 >= 5 ) ) {
+    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /TGGAGCTGGTGGCGTA/ ) {
             $JUG = 2;
         }
@@ -217,25 +185,14 @@ sub KG12 {
 }
 
 sub R175H {
-    my $SEQ    = shift;
-    my $SEQ_RC = SEQ_REV_COMP($SEQ);
-    my $FIND   = shift;
-    my $RIND   = shift;
-    my @SEQ    = split( //, $SEQ );
-    my @SEQ_RC = split( //, $SEQ_RC );
-    my @FIND   = split( //, $FIND );
-    my @RIND   = split( //, $RIND );
-    my $JUG    = 0;
-    my ( $F_MATCH1, $R_MATCH1, $F_MATCH2, $R_MATCH2 ) = ( 0, 0, 0, 0 );
-
-    foreach ( 0 .. 5 ) {
-        $F_MATCH1++ if $SEQ[$_] eq $FIND[$_];
-        $F_MATCH2++ if $SEQ[ $_ - 6 ] eq $RIND[$_];
-        $R_MATCH1++ if $SEQ_RC[$_] eq $FIND[$_];
-        $R_MATCH2++ if $SEQ_RC[ $_ - 6 ] eq $RIND[$_];
-    }
-
-    if ( ( $F_MATCH1 >= 5 ) && ( $F_MATCH2 >= 5 ) ) {
+    my $SEQ      = shift;
+    my $SEQ_RC   = SEQ_REV_COMP($SEQ);
+    my $FIND     = shift;
+    my $RIND     = shift;
+    my $FIND_REG = REG($FIND);
+    my $RIND_REG = REG($RIND);
+    my $JUG      = 0;
+    if ( ( $SEQ =~ /$FIND_REG/ ) && ( $SEQ =~ /$RIND_REG/ ) ) {
         if ( $SEQ =~ /GTGAGGCGCTGCCCCC/ ) {
             $JUG = 2;
         }
@@ -243,7 +200,7 @@ sub R175H {
             $JUG = 1;
         }
     }
-    elsif ( ( $R_MATCH1 >= 5 ) && ( $R_MATCH2 >= 5 ) ) {
+    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /GTGAGGCGCTGCCCCC/ ) {
             $JUG = 2;
         }
