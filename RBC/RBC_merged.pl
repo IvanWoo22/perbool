@@ -68,9 +68,8 @@ sub E19D {
         {
             $JUG = 1;
         }
-
     }
-    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
+    if ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /TATCAAGGAATTAAGAGAAGCAACATCTCCGAAAGC/ ) {
             $JUG = 2;
         }
@@ -111,7 +110,7 @@ sub T790M {
             $JUG = 1;
         }
     }
-    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
+    if ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /CTCATCACGCAGCTC/ ) {
             $JUG = 2;
         }
@@ -138,7 +137,7 @@ sub L858R {
             $JUG = 1;
         }
     }
-    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
+    if ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /TTTGGGCTGGCCAAA/ ) {
             $JUG = 2;
         }
@@ -169,7 +168,7 @@ sub KG12 {
             $JUG = 1;
         }
     }
-    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
+    if ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /TGGAGCTGGTGGCGTA/ ) {
             $JUG = 2;
         }
@@ -200,7 +199,7 @@ sub R175H {
             $JUG = 1;
         }
     }
-    elsif ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
+    if ( ( $SEQ_RC =~ /$FIND_REG/ ) && ( $SEQ_RC =~ /$RIND_REG/ ) ) {
         if ( $SEQ_RC =~ /GTGAGGCGCTGCCCCC/ ) {
             $JUG = 2;
         }
