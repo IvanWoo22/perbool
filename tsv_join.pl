@@ -3,52 +3,56 @@ use strict;
 use warnings;
 use autodie;
 
-open( my $TSV1, "<", $ARGV[0] );
-open( my $TSV2, "<", $ARGV[1] );
+open( my $TSV_ROOT, "<", $ARGV[0] );
+my @tsv_root = <$TSV_ROOT>;
+close($TSV_ROOT);
 
-my %table1;
-my %table2;
-my $col_num1;
-my $col_num2;
-
-my @tsv1 = <$TSV1>;
-foreach (@tsv1) {
+my ( %table_root, $col_root );
+foreach (@tsv_root) {
     chomp;
     my @tbl  = split /\s+/;
     my $name = $tbl[0];
-    $col_num1 = $#tbl;
-    $table1{$name} = join( "\t", @tbl[ 1 .. $col_num1 ] );
+    $col_root = $#tbl;
+    $table_root{$name} = join( "\t", @tbl[ 1 .. $col_root ] );
 }
 
-my @tsv2 = <$TSV2>;
-foreach (@tsv2) {
-    chomp;
-    my @tbl  = split /\s+/;
-    my $name = $tbl[0];
-    $col_num2 = $#tbl;
-    $table2{$name} = join( "\t", @tbl[ 1 .. $col_num2 ] );
-}
-
-my %count;
-foreach my $e ( keys(%table1), keys(%table2) ) {
-    $count{$e}++;
-}
-
-for my $key ( keys %count ) {
-    if ( ( exists( $table1{$key} ) ) and ( exists( $table2{$key} ) ) ) {
-        $table1{$key} .= "\t" . $table2{$key};
+foreach my $FILE ( @ARGV[ 1 .. $#ARGV ] ) {
+    open( my $TSV_ADD, "<", $FILE );
+    my @tsv_add = <$TSV_ADD>;
+    close($TSV_ADD);
+    my ( $col_add, %table_add );
+    foreach (@tsv_add) {
+        chomp;
+        my @tbl  = split /\s+/;
+        my $name = $tbl[0];
+        $col_add = $#tbl;
+        $table_add{$name} = join( "\t", @tbl[ 1 .. $col_add ] );
     }
-    elsif ( exists( $table2{$key} ) ) {
-        $table1{$key} = join( "\t", ("N/A") x $col_num1 );
-        $table1{$key} .= "\t" . $table2{$key};
+
+    my %count;
+    foreach my $e ( keys(%table_root), keys(%table_add) ) {
+        $count{$e}++;
     }
-    elsif ( exists( $table1{$key} ) ) {
-        $table1{$key} .= "\t" . join( "\t", ("N/A") x $col_num2 );
+
+    for my $key ( keys %count ) {
+        if (    ( exists( $table_root{$key} ) )
+            and ( exists( $table_add{$key} ) ) )
+        {
+            $table_root{$key} .= "\t" . $table_add{$key};
+        }
+        elsif ( exists( $table_add{$key} ) ) {
+            $table_root{$key} = join( "\t", ("NA") x $col_root );
+            $table_root{$key} .= "\t" . $table_add{$key};
+        }
+        elsif ( exists( $table_root{$key} ) ) {
+            $table_root{$key} .= "\t" . join( "\t", ("NA") x $col_add );
+        }
     }
+    $col_root = $col_root + $col_add;
 }
 
-for my $key ( keys %table1 ) {
-    print("$key\t$table1{$key}\n");
+for my $key ( keys %table_root ) {
+    print("$key\t$table_root{$key}\n");
 }
 
 __END__
