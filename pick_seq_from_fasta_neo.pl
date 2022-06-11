@@ -24,7 +24,8 @@ sub SEQ_TR_TU {
 
 my %fasta;
 my $title_name;
-while (<$in_fa>) {
+open my $FA, "<", $in_fa;
+while (<$FA>) {
     if (/^>(\S+)/) {
         $title_name = $1;
     }
@@ -33,7 +34,7 @@ while (<$in_fa>) {
         $fasta{$title_name} .= $_;
     }
 }
-close($in_fa);
+close($FA);
 
 if ( defined($in_list) ) {
     open( my $SEG, "<", $in_list );
