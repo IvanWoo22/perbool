@@ -51,7 +51,6 @@ if ( defined($in_list) ) {
             else {
                 $seq = SEQ_TR_TU($seq);
             }
-
             if ( defined($name) ) {
                 print ">$chr:$start-$end($dir)$name\n$seq\n";
             }
