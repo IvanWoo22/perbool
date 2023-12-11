@@ -12,17 +12,19 @@ fetch_fasta.pl -- Get all sequences with the same searched string in a FastA fil
         Options:
             --help\-h   Brief help message
             --string\-s The sequences we want to fetch
-            --file\-f   The FastA file with path
+            --fasta\-f  The FastA file with path
             --stdin     Get FastA from STDIN. It will not been not valid with a provided '--file'
             --rna2dna   Change "U" to "T". Default: False
+            --exact     Exact name match. Default: False
 =cut
 
 Getopt::Long::GetOptions(
     'help|h'     => sub { Getopt::Long::HelpMessage(0) },
     'string|s=s' => \my $char,
-    'file|f=s'   => \my $in_fa,
+    'fasta|f=s'  => \my $in_fa,
     'stdin'      => \my $stdin,
     'rna2dna'    => \my $rna2dna,
+    'exact'      => \my $exact,
 ) or Getopt::Long::HelpMessage(1);
 
 my @info;
@@ -45,21 +47,41 @@ sub SEQ_TR_TU {
 
 my $i = 0;
 while ( $i <= $#info ) {
-    if ( $info[$i] =~ /$char/ ) {
-        print( $info[$i] );
-        my $j = 1;
-        until ( ( $i + $j > $#info ) or ( $info[ $i + $j ] =~ /^>/ ) ) {
-            if ( defined($rna2dna) ) {
-                $info[ $i + $j ] = SEQ_TR_TU( $info[ $i + $j ] );
+    if ( undef($exact) ) {
+        if ( $info[$i] =~ /$char/ ) {
+            print( $info[$i] );
+            my $j = 1;
+            until ( ( $i + $j > $#info ) or ( $info[ $i + $j ] =~ /^>/ ) ) {
+                if ( defined($rna2dna) ) {
+                    $info[ $i + $j ] = SEQ_TR_TU( $info[ $i + $j ] );
+                }
+                print( $info[ $i + $j ] );
+                $j++;
             }
-            print( $info[ $i + $j ] );
-            $j++;
+            $i += $j;
         }
-        $i += $j;
+        else {
+            $i++;
+        }
     }
     else {
-        $i++;
+        if ( $info[$i] =~ /$char\s+/ ) {
+            print( $info[$i] );
+            my $j = 1;
+            until ( ( $i + $j > $#info ) or ( $info[ $i + $j ] =~ /^>/ ) ) {
+                if ( defined($rna2dna) ) {
+                    $info[ $i + $j ] = SEQ_TR_TU( $info[ $i + $j ] );
+                }
+                print( $info[ $i + $j ] );
+                $j++;
+            }
+            $i += $j;
+        }
+        else {
+            $i++;
+        }
     }
+
 }
 
 __END__
