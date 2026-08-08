@@ -4,6 +4,6 @@ use warnings;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
 
-use Perbool::Command::FastaFromList qw(run);
+use Perbool::Command::FastaDelete qw(run);
 
 exit run(@ARGV);

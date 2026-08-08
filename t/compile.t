@@ -12,6 +12,7 @@ find(
     },
     '.',
 );
+push @scripts, './bin/perbool' if -f './bin/perbool';
 
 @scripts = sort @scripts;
 plan tests => scalar @scripts;

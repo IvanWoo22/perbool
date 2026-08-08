@@ -20,45 +20,61 @@ cpanm --installdeps .
 
 ## Usage
 
+Use the normalized repository-local CLI:
+
 ```shell
-perl fetch_fasta.pl \
+export PATH="$PWD/bin:$PATH"
+perbool --help
+```
+
+```shell
+perbool fasta fetch \
     -f mature.fa \
     --string "Spodoptera frugiperda" \
     >sfr_mature.fa
 
-perl fetch_fasta.pl \
+perbool fasta fetch \
     -f transcripts.fa.gz \
     --string transcript_001 --exact \
     >transcript_001.fa
 
-perl unique_fasta.pl input.fa.gz >unique.fa
+perbool fasta unique input.fa.gz >unique.fa
 
-perl find_seq_from_fasta.pl \
+perbool fasta find \
     --fa genome.fa.gz --seq ACGT
 
-perl pick_seq_from_fasta_neo.pl \
+perbool fasta extract-intervals \
     --fa genome.fa.gz --in intervals.txt \
     >intervals.fa
 
-perl filter_fastq.pl \
+perbool fasta delete \
+    --name remove.txt --in input.fa.gz --out retained.fa.gz
+
+perbool fastq filter \
     --max 30 --min 20 \
     -i input.fq -o output.fq
     
-perl fastqKmer.pl \
+perbool fastq split-kmers \
     -K 20 \
     -i test.fq -o test.out.fq
     
-perl fastq_randomsampling.pl \
+perbool fastq sample \
     -q 100 --without-replacement --seed 42 \
     -i test.fq -o test.out.fq
 ```
 
-`fastq_randomsampling.pl` samples with replacement by default for backward
-compatibility. Use `--without-replacement` for conventional FASTQ subsampling
-and `--seed` when the sampled dataset must be reproducible.
+`perbool fastq sample` (legacy entry point: `fastq_randomsampling.pl`) samples
+with replacement by default for backward compatibility. Use
+`--without-replacement` for conventional FASTQ subsampling and `--seed` when
+the sampled dataset must be reproducible.
 
-Each utility is an independent command-line script. Run scripts that support
-options with `--help` to see their complete usage.
+Commands with option-based interfaces support `--help`; positional commands
+show a concise usage error when invoked without their required arguments.
+
+`bin/perbool` is the stable command namespace. It uses lowercase groups and
+kebab-case commands, such as `perbool fasta extract-intervals`. Historical
+root-level `.pl` commands remain available as compatibility entry points while
+their implementations are migrated.
 
 FASTA readers accept multiline records, and the migrated extraction and
 deduplication tools transparently read `.gz` input. `fetch_fasta.pl` searches
@@ -72,6 +88,18 @@ Interval files for `pick_seq_from_fasta_neo.pl` contain
 either coordinate order is accepted, and invalid or out-of-range intervals are
 rejected instead of silently truncated. The older two-argument
 `pick_seq_from_fasta.pl` command remains available as a compatibility wrapper.
+
+## Project layout
+
+- `bin/perbool`: normalized user-facing command entry point
+- `lib/Perbool/`: reusable parsing, validation, path, and CLI modules
+- `t/`: behavioral regression and compile tests
+- `qc/` and `RBC/`: domain-specific legacy tools being migrated in stages
+- root-level `.pl` files: compatibility entry points; new tools should not be
+  added here
+
+See [the CLI and directory migration guide](docs/architecture.md) for naming
+rules, current command mappings, and the staged refactoring policy.
 
 ## Development
 

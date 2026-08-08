@@ -6,13 +6,16 @@ use autodie;
 
 use Exporter qw(import);
 use IO::Zlib;
+use Perbool::Paths qw(assert_distinct_paths);
 
 our @EXPORT_OK = qw(
+  assert_distinct_paths
   extract_interval
   fasta_id
   fasta_iterator
   load_fasta_sequences
   open_fasta_reader
+  open_fasta_writer
   reverse_complement
   rna_to_dna
   sequence_text
@@ -30,6 +33,20 @@ sub open_fasta_reader {
     }
 
     open my $fh, '<', $path;
+    return $fh;
+}
+
+sub open_fasta_writer {
+    my $path = shift;
+    return *STDOUT{IO} if $path eq '-';
+
+    if ( $path =~ /[.]gz\z/i ) {
+        my $fh = IO::Zlib->new( $path, 'wb9' )
+          or die "Cannot open $path: $!\n";
+        return $fh;
+    }
+
+    open my $fh, '>', $path;
     return $fh;
 }
 

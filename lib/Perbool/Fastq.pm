@@ -4,10 +4,9 @@ use strict;
 use warnings;
 use autodie;
 
-use Cwd qw(abs_path);
 use Exporter qw(import);
-use File::Spec;
 use IO::Zlib;
+use Perbool::Paths qw(assert_distinct_paths);
 
 our @EXPORT_OK = qw(
   assert_distinct_paths
@@ -20,22 +19,6 @@ our @EXPORT_OK = qw(
   sequence_text
   write_fastq_record
 );
-
-sub assert_distinct_paths {
-    my ( $input_path, $output_path ) = @_;
-    return if $input_path eq '-' || $output_path eq '-';
-
-    my $resolved_input = abs_path($input_path);
-    my $resolved_output =
-      -e $output_path
-      ? abs_path($output_path)
-      : File::Spec->canonpath( File::Spec->rel2abs($output_path) );
-
-    die "Input and output must refer to different files\n"
-      if defined $resolved_input
-      && defined $resolved_output
-      && $resolved_input eq $resolved_output;
-}
 
 sub open_fastq_reader {
     my $path = shift;
