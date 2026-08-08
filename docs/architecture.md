@@ -53,6 +53,8 @@ loading.
 | `perbool table join` | `tsv_join.pl` |
 | `perbool table extract-after` | `format_column_name.pl` |
 | `perbool table count-duplicates` | `count_duplication.pl` |
+| `perbool genome bed-to-yaml` | `bed2yml.pl` |
+| `perbool genome transcript-coordinate` | `coordinate_position.pl` |
 | `perbool fastq fetch` | `fetch_fastq.pl` |
 | `perbool fastq delete` | `delete_fastq.pl` |
 | `perbool fastq filter` | `filter_fastq.pl` |

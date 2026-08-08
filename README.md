@@ -65,6 +65,12 @@ perbool table join sample_a.tsv sample_b.tsv.gz >joined.tsv
 perbool table intersect-lines \
     --left expected.txt --right observed.txt --unique
 
+perbool genome bed-to-yaml --in regions.bed.gz >regions.yml
+
+perbool genome transcript-coordinate \
+    --transcript ENST00000335137.4 --position 120 \
+    --in transcript_ranges.tsv.gz
+
 perbool fastq filter \
     --max 30 --min 20 \
     -i input.fq -o output.fq
@@ -114,6 +120,17 @@ The `table` command group operates on exact text or tab-delimited data. In
 particular, `perbool table join` performs a sorted full-outer join on the first
 column, preserves empty cells, and rejects duplicate keys or inconsistent
 column counts instead of silently overwriting data.
+
+`perbool genome bed-to-yaml` reads standard BED coordinates (0-based,
+half-open), merges intervals by reference name, and writes 1-based inclusive
+run lists. This corrects the historical `bed2yml.pl` off-by-one behavior, which
+passed BED columns directly to an inclusive interval API.
+
+`perbool genome transcript-coordinate` maps a 1-based position along the union
+of supplied exon/UTR ranges to its genomic coordinate. Its five-column input is
+`REFERENCE START END STRAND GFF_ATTRIBUTES`; coordinates are 1-based inclusive,
+negative-strand transcripts are traversed from high to low genomic coordinate,
+and comma-separated `Parent=transcript:ID` values are supported.
 
 ## Project layout
 
