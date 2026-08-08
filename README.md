@@ -26,6 +26,13 @@ perl fetch_fasta.pl \
     --string "Spodoptera frugiperda" \
     >sfr_mature.fa
 
+perl fetch_fasta.pl \
+    -f transcripts.fa.gz \
+    --string transcript_001 --exact \
+    >transcript_001.fa
+
+perl unique_fasta.pl input.fa.gz >unique.fa
+
 perl filter_fastq.pl \
     --max 30 --min 20 \
     -i input.fq -o output.fq
@@ -46,9 +53,14 @@ and `--seed` when the sampled dataset must be reproducible.
 Each utility is an independent command-line script. Run scripts that support
 options with `--help` to see their complete usage.
 
+FASTA readers accept multiline records, and the migrated extraction and
+deduplication tools transparently read `.gz` input. `fetch_fasta.pl` searches
+header text literally by default; `--exact` instead matches the complete first
+ID after `>`.
+
 ## Development
 
-Compile-check every Perl script with:
+Run the complete regression and compile-check suite with:
 
 ```shell
 prove --verbose t

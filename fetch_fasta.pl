@@ -2,8 +2,13 @@
 use strict;
 use warnings;
 use autodie;
-
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 use Getopt::Long;
+
+use Perbool::Fasta qw(
+  fasta_id fasta_iterator open_fasta_reader sequence_text write_fasta_record
+);
 
 =head1 NAME
 fetch_fasta.pl -- Get all sequences with the same searched string in a FastA file.
@@ -11,11 +16,11 @@ fetch_fasta.pl -- Get all sequences with the same searched string in a FastA fil
     perl fetch_fasta.pl -s protein_coding [options]
         Options:
             --help\-h   Brief help message
-            --string\-s The sequences we want to fetch
+            --string\-s Literal text to find in FASTA headers
             --fasta\-f  The FastA file with path
-            --stdin     Get FastA from STDIN. It will not been not valid with a provided '--file'
+            --stdin     Get FastA from STDIN; mutually exclusive with '--fasta'
             --rna2dna   Change "U" to "T". Default: False
-            --exact     Exact name match. Default: False
+            --exact     Match the complete first FASTA ID. Default: False
 =cut
 
 Getopt::Long::GetOptions(
@@ -27,61 +32,27 @@ Getopt::Long::GetOptions(
     'exact'      => \my $exact,
 ) or Getopt::Long::HelpMessage(1);
 
-my @info;
-if ( defined($in_fa) ) {
-    open my $FA, "<", $in_fa;
-    @info = <$FA>;
-    close($FA);
-}
-elsif ( defined($stdin) ) {
-    @info = <>;
-}
-else {
-    die("==> You should provide FastA!");
-}
+die "--string is required\n" unless defined $char && length $char;
+die "Choose exactly one of --fasta and --stdin\n"
+  unless ( defined($in_fa) ? 1 : 0 ) + ( $stdin ? 1 : 0 ) == 1;
 
-sub SEQ_TR_TU {
-    my $SEQ = shift;
-    return ( $SEQ =~ tr/Uu/Tt/r );
-}
+my $input_path = defined($in_fa) ? $in_fa : '-';
+my $fh = open_fasta_reader($input_path);
+my $next_record = fasta_iterator($fh);
 
-my $i = 0;
-while ( $i <= $#info ) {
-    if ( undef($exact) ) {
-        if ( $info[$i] =~ /$char/ ) {
-            print( $info[$i] );
-            my $j = 1;
-            until ( ( $i + $j > $#info ) or ( $info[ $i + $j ] =~ /^>/ ) ) {
-                if ( defined($rna2dna) ) {
-                    $info[ $i + $j ] = SEQ_TR_TU( $info[ $i + $j ] );
-                }
-                print( $info[ $i + $j ] );
-                $j++;
-            }
-            $i += $j;
-        }
-        else {
-            $i++;
-        }
+while ( my $record = $next_record->() ) {
+    my $matches = $exact
+      ? fasta_id($record) eq $char
+      : index( $record->{header}, $char ) >= 0;
+    next unless $matches;
+
+    if ($rna2dna) {
+        my $sequence = sequence_text($record);
+        $sequence =~ tr/Uu/Tt/;
+        $record->{sequence} = $sequence;
     }
-    else {
-        if ( $info[$i] =~ /$char\s+/ ) {
-            print( $info[$i] );
-            my $j = 1;
-            until ( ( $i + $j > $#info ) or ( $info[ $i + $j ] =~ /^>/ ) ) {
-                if ( defined($rna2dna) ) {
-                    $info[ $i + $j ] = SEQ_TR_TU( $info[ $i + $j ] );
-                }
-                print( $info[ $i + $j ] );
-                $j++;
-            }
-            $i += $j;
-        }
-        else {
-            $i++;
-        }
-    }
-
+    write_fasta_record( *STDOUT{IO}, $record );
 }
+close $fh unless $input_path eq '-';
 
 __END__

@@ -2,33 +2,24 @@
 use strict;
 use warnings;
 use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 
-my %fasta;
-my $current_seq = 0;
+use Perbool::Fasta qw(
+  fasta_iterator open_fasta_reader sequence_text write_fasta_record
+);
 
-open( my $fa, "<", $ARGV[0] );
-chomp( my $current_id = <$fa> );
-while (<$fa>) {
-    chomp;
-    my $current_line = $_;
-    if ( $current_line =~ m/^>/ ) {
-        unless ( exists( $fasta{$current_seq} ) ) {
-            $fasta{$current_seq} = $current_id;
-            print("$fasta{$current_seq}\n$current_seq\n");
-        }
-        $current_seq = 0;
-        $current_id  = $current_line;
-    }
-    else {
-        if ( $current_seq eq 0 ) {
-            $current_seq = $current_line;
-        }
-        else {
-            $current_seq .= $current_line;
-        }
-    }
+die "Usage: perl unique_fasta.pl INPUT.fa[.gz]\n" unless @ARGV == 1;
+my $input_path = $ARGV[0];
+my $fh = open_fasta_reader($input_path);
+my $next_record = fasta_iterator($fh);
+my %seen_sequence;
+
+while ( my $record = $next_record->() ) {
+    my $sequence = sequence_text($record);
+    next if $seen_sequence{$sequence}++;
+    write_fasta_record( *STDOUT{IO}, $record );
 }
-close($fa);
-print("$current_id\n$current_seq\n");
+close $fh unless $input_path eq '-';
 
 __END__
