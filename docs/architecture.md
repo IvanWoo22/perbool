@@ -49,6 +49,10 @@ loading.
 | `perbool fasta substitute` | `snp4fasta.pl` |
 | `perbool fasta filter-composition` | `base_proportion.pl` |
 | `perbool sequence reverse-complement` | `rcdna.pl` |
+| `perbool table intersect-lines` | `compare_file.pl` |
+| `perbool table join` | `tsv_join.pl` |
+| `perbool table extract-after` | `format_column_name.pl` |
+| `perbool table count-duplicates` | `count_duplication.pl` |
 | `perbool fastq fetch` | `fetch_fastq.pl` |
 | `perbool fastq delete` | `delete_fastq.pl` |
 | `perbool fastq filter` | `filter_fastq.pl` |
@@ -82,3 +86,8 @@ names can stabilize now while implementation code is reorganized safely.
 that consume their historical intermediate line-range format. New workflows
 should use `perbool fasta delete`, which performs validated ID-based deletion
 in one command.
+
+The compatibility name `tsv_join.pl` now follows its stated format: fields are
+split only on tabs. Inputs with duplicate keys, empty keys, inconsistent
+widths, or no rows fail before output is written. Historical reliance on
+space-delimited input must be migrated to explicit TSV first.

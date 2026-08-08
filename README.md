@@ -60,6 +60,11 @@ perbool fasta filter-composition \
 
 perbool sequence reverse-complement ACGTRYMK
 
+perbool table join sample_a.tsv sample_b.tsv.gz >joined.tsv
+
+perbool table intersect-lines \
+    --left expected.txt --right observed.txt --unique
+
 perbool fastq filter \
     --max 30 --min 20 \
     -i input.fq -o output.fq
@@ -105,10 +110,15 @@ per row. `perbool fasta filter-composition` uses canonical A/C/G/T bases as its
 denominator and ignores ambiguity symbols. Its threshold comparison is strict
 (`fraction > threshold`).
 
+The `table` command group operates on exact text or tab-delimited data. In
+particular, `perbool table join` performs a sorted full-outer join on the first
+column, preserves empty cells, and rejects duplicate keys or inconsistent
+column counts instead of silently overwriting data.
+
 ## Project layout
 
 - `bin/perbool`: normalized user-facing command entry point
-- `lib/Perbool/`: reusable parsing, validation, path, and CLI modules
+- `lib/Perbool/`: reusable parsing, validation, I/O, path, CLI, and command modules
 - `t/`: behavioral regression and compile tests
 - `qc/` and `RBC/`: domain-specific legacy tools being migrated in stages
 - root-level `.pl` files: compatibility entry points; new tools should not be

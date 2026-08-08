@@ -1,20 +1,9 @@
+#!/usr/bin/env perl
 use strict;
 use warnings;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 
-open(my $in1,"<",$ARGV[0]);
-open(my $in2,"<",$ARGV[1]);
+use Perbool::Command::TableIntersect qw(run);
 
-my %compare;
-while(<$in1>){
-    chomp;
-    $compare{$_}=1;
-}
-
-while(<$in2>){
-    chomp;
-    if(exists($compare{$_})){
-        print("$_\n");
-    }
-}
-
-__END__
+exit run(@ARGV);

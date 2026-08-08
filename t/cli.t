@@ -44,7 +44,7 @@ sub run_command {
 }
 
 my @rows = command_rows();
-is( scalar @rows, 23, 'normalized CLI exposes the maintained command set' );
+is( scalar @rows, 27, 'normalized CLI exposes the maintained command set' );
 ok( -x 'bin/perbool', 'normalized CLI entry point is executable' );
 my %command_name;
 for my $row (@rows) {
@@ -61,6 +61,7 @@ is( $help_error,  '', 'top-level CLI help emits no errors' );
 like( $help_output, qr/^Usage: perbool GROUP COMMAND/m, 'help shows usage' );
 like( $help_output, qr/^  fasta$/m, 'help groups FASTA commands' );
 like( $help_output, qr/^  sequence$/m, 'help groups sequence commands' );
+like( $help_output, qr/^  table$/m, 'help groups table commands' );
 like( $help_output, qr/^  fastq$/m, 'help groups FASTQ commands' );
 like( $help_output, qr/^  qc$/m, 'help groups QC commands' );
 

@@ -5,7 +5,7 @@ use warnings;
 use autodie;
 
 use Exporter qw(import);
-use IO::Zlib;
+use Perbool::IO qw(open_text_reader open_text_writer);
 use Perbool::Paths qw(assert_distinct_paths);
 
 our @EXPORT_OK = qw(
@@ -21,31 +21,11 @@ our @EXPORT_OK = qw(
 );
 
 sub open_fastq_reader {
-    my $path = shift;
-    return *STDIN{IO} if $path eq '-';
-
-    if ( $path =~ /[.]gz\z/i ) {
-        my $fh = IO::Zlib->new( $path, 'rb' )
-          or die "Cannot open $path: $!\n";
-        return $fh;
-    }
-
-    open my $fh, '<', $path;
-    return $fh;
+    return open_text_reader(@_);
 }
 
 sub open_fastq_writer {
-    my $path = shift;
-    return *STDOUT{IO} if $path eq '-';
-
-    if ( $path =~ /[.]gz\z/i ) {
-        my $fh = IO::Zlib->new( $path, 'wb9' )
-          or die "Cannot open $path: $!\n";
-        return $fh;
-    }
-
-    open my $fh, '>', $path;
-    return $fh;
+    return open_text_writer(@_);
 }
 
 sub read_fastq_record {

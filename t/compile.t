@@ -4,20 +4,24 @@ use warnings;
 use File::Find qw(find);
 use Test::More;
 
-my @scripts;
+my @sources;
 find(
     sub {
-        return unless -f $_ && /[.]pl\z/;
-        push @scripts, $File::Find::name;
+        if ( -d $_ && /\A(?:[.]git|local|blib|_build|cover_db)\z/ ) {
+            $File::Find::prune = 1;
+            return;
+        }
+        return unless -f $_ && /[.](?:pl|pm)\z/;
+        push @sources, $File::Find::name;
     },
     '.',
 );
-push @scripts, './bin/perbool' if -f './bin/perbool';
+push @sources, './bin/perbool' if -f './bin/perbool';
 
-@scripts = sort @scripts;
-plan tests => scalar @scripts;
+@sources = sort @sources;
+plan tests => scalar @sources;
 
-for my $script (@scripts) {
-    my $status = system $^X, '-c', $script;
-    is( $status, 0, "$script compiles" );
+for my $source (@sources) {
+    my $status = system $^X, '-Ilib', '-c', $source;
+    is( $status, 0, "$source compiles" );
 }
