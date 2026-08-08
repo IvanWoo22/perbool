@@ -25,6 +25,10 @@ Command implementations being migrated live below `lib/Perbool/Command/`;
 their historical root scripts contain only argument forwarding and module
 loading.
 
+All normalized FASTQ commands have completed this migration. Their historical
+entry points are thin wrappers, while parsing, validation, gzip/stream I/O, and
+output-staging behavior live in `Perbool::Command::*` modules.
+
 ## Scope boundary
 
 perbool contains reusable command-line tools, parsers, validators, and report

@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use File::Path qw(make_path);
 use File::Spec;
 use File::Temp qw(tempdir);
 use IO::Zlib;
@@ -25,6 +26,14 @@ sub read_text {
     my $content = do { local $/; <$fh> };
     close $fh;
     return $content;
+}
+
+sub write_gzip {
+    my ( $path, $content ) = @_;
+    my $fh = IO::Zlib->new( $path, 'wb9' )
+      or die "Cannot write $path: $!";
+    print {$fh} $content;
+    close $fh;
 }
 
 sub read_gzip {
@@ -223,14 +232,30 @@ is(
     'default step emits all sliding windows without corrupting a bare read ID',
 );
 
+my $normalized_kmer_input = path_for('normalized-kmer.fq.gz');
+my $normalized_kmer_output = path_for('normalized-kmer.out.fq.gz');
+write_gzip( $normalized_kmer_input, read_text($kmer_in) );
+is(
+    system(
+        'bin/perbool', 'fastq', 'split-kmers', '--in', $normalized_kmer_input,
+        '--out', $normalized_kmer_output, '--kmer', 4, '--step', 3,
+    ),
+    0,
+    'normalized K-mer splitting supports gzip input and output',
+);
+is(
+    read_gzip($normalized_kmer_output),
+    read_text($kmer_out),
+    'normalized and legacy K-mer splitting agree',
+);
+
 my $paired_source = path_for('long-read.fq');
 my $left_out = path_for('left.fq');
 my $right_out = path_for('right.fq');
-write_text(
-    $paired_source,
+my $paired_source_content =
     "\@long description\nAAACCGTA\n+long description\n12345678\n"
-      . "\@bare\nACGT\n+\nIIII\n",
-);
+  . "\@bare\nACGT\n+\nIIII\n";
+write_text( $paired_source, $paired_source_content );
 is(
     system(
         $^X, 'singled2paired.pl', '--in', $paired_source, '--length', 3,
@@ -251,6 +276,24 @@ is(
       . "\@bare 2\nACG\n+\nIII\n",
     'right output reverse-complements sequence and reverses quality',
 );
+
+my $r1_directory = path_for('normalized-r1');
+my $r2_directory = path_for('normalized-r2');
+make_path( $r1_directory, $r2_directory );
+my $normalized_r1 = File::Spec->catfile( $r1_directory, 'reads.fq.gz' );
+my $normalized_r2 = File::Spec->catfile( $r2_directory, 'reads.fq.gz' );
+my $paired_gzip_input = path_for('long-read.fq.gz');
+write_gzip( $paired_gzip_input, $paired_source_content );
+is(
+    system(
+        'bin/perbool', 'fastq', 'single-to-paired', '--in', $paired_gzip_input,
+        '--length', 3, '--r1', $normalized_r1, '--r2', $normalized_r2,
+    ),
+    0,
+    'normalized single-to-paired supports gzip and separate output directories',
+);
+is( read_gzip($normalized_r1), read_text($left_out), 'normalized R1 agrees with legacy R1' );
+is( read_gzip($normalized_r2), read_text($right_out), 'normalized R2 agrees with legacy R2' );
 isnt(
     system(
         $^X, 'singled2paired.pl', '--in', $paired_source, '--length', 3,
@@ -293,5 +336,36 @@ isnt(
     'sequence and quality length mismatch is rejected',
 );
 is( read_text($broken_out), "preserved filtered output\n", 'failed filter preserves existing output' );
+
+my $broken_kmer_out = path_for('broken-kmer.out.fq');
+write_text( $broken_kmer_out, "preserved K-mer output\n" );
+isnt(
+    system(
+        'bin/perbool', 'fastq', 'split-kmers', '--in', $broken_in,
+        '--out', $broken_kmer_out, '--kmer', 3,
+    ),
+    0,
+    'K-mer splitting rejects a malformed later record',
+);
+is(
+    read_text($broken_kmer_out),
+    "preserved K-mer output\n",
+    'failed K-mer splitting preserves existing output',
+);
+
+my $broken_r1 = path_for('broken-paired.R1.fq');
+my $broken_r2 = path_for('broken-paired.R2.fq');
+write_text( $broken_r1, "preserved converted R1\n" );
+write_text( $broken_r2, "preserved converted R2\n" );
+isnt(
+    system(
+        'bin/perbool', 'fastq', 'single-to-paired', '--in', $broken_in,
+        '--length', 3, '--r1', $broken_r1, '--r2', $broken_r2,
+    ),
+    0,
+    'single-to-paired rejects a malformed later record',
+);
+is( read_text($broken_r1), "preserved converted R1\n", 'failed conversion preserves R1' );
+is( read_text($broken_r2), "preserved converted R2\n", 'failed conversion preserves R2' );
 
 done_testing();

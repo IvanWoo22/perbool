@@ -4,6 +4,8 @@ use warnings;
 use File::Spec;
 use File::Temp qw(tempdir);
 use IO::Zlib;
+use IPC::Open3;
+use Symbol qw(gensym);
 use Test::More;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -45,6 +47,18 @@ sub read_gzip {
     }
     close $fh;
     return $content;
+}
+
+sub run_with_stdin {
+    my ( $input, @command ) = @_;
+    my $stderr = gensym;
+    my $pid = open3( my $child_in, my $child_out, $stderr, @command );
+    print {$child_in} $input if defined $input;
+    close $child_in;
+    my $stdout_text = do { local $/; <$child_out> };
+    my $stderr_text = do { local $/; <$stderr> };
+    waitpid $pid, 0;
+    return ( $?, $stdout_text, $stderr_text );
 }
 
 my $input_content =
@@ -128,6 +142,30 @@ is(
     'gzip sampling output matches plain FASTQ output',
 );
 
+my $normalized_path = path_for('normalized.fq');
+is(
+    system(
+        'bin/perbool', 'fastq', 'sample', '--in', $input_path,
+        '--out', $normalized_path, '--quantity', 3,
+        '--without-replacement', '--seed', 11,
+    ),
+    0,
+    'normalized sampling command exits successfully',
+);
+is(
+    read_text($normalized_path),
+    read_text($unique_path),
+    'normalized and legacy sampling interfaces agree',
+);
+
+my ( $stdin_status, $stdin_output, $stdin_error ) = run_with_stdin(
+    $input_content, 'bin/perbool', 'fastq', 'sample', '--in', '-', '--out', '-',
+    '--quantity', 3, '--without-replacement', '--seed', 11,
+);
+is( $stdin_status, 0, 'sampling accepts FASTQ from standard input' );
+is( $stdin_error, '', 'standard-input sampling emits no errors' );
+is( $stdin_output, read_text($unique_path), 'standard-input sampling is correct' );
+
 my $broken_path = path_for('broken.fq');
 write_text( $broken_path, "\@broken\nACGT\n+\nIII\n" );
 isnt(
@@ -137,6 +175,27 @@ isnt(
     ),
     0,
     'invalid sequence and quality lengths are rejected before sampling',
+);
+
+my $late_broken_path = path_for('late-broken.fq');
+my $preserved_path = path_for('preserved.fq');
+write_text(
+    $late_broken_path,
+    "\@valid\nACGT\n+\nIIII\n\@broken\nACGT\n+\nIII\n",
+);
+write_text( $preserved_path, "preserved sampled output\n" );
+isnt(
+    system(
+        'bin/perbool', 'fastq', 'sample', '--in', $late_broken_path,
+        '--out', $preserved_path, '--quantity', 1, '--seed', 3,
+    ),
+    0,
+    'sampling rejects a malformed later record',
+);
+is(
+    read_text($preserved_path),
+    "preserved sampled output\n",
+    'failed sampling preserves an existing output file',
 );
 
 done_testing();

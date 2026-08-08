@@ -98,7 +98,9 @@ perbool qc summary --no-plot --out-prefix qc/sample \
 `perbool fastq sample` (legacy entry point: `fastq_randomsampling.pl`) samples
 with replacement by default for backward compatibility. Use
 `--without-replacement` for conventional FASTQ subsampling and `--seed` when
-the sampled dataset must be reproducible.
+the sampled dataset must be reproducible. File, gzip, and standard input are
+supported; standard input is validated into a temporary spool for the second
+sampling pass.
 
 The maintained FASTQ conversion, selection, and length-filter commands accept
 gzip input and output through their normalized `--in`/`--out` interfaces.
@@ -106,6 +108,9 @@ File outputs are written in the destination directory and committed only after
 the complete input validates; malformed later records or paired-ID mismatches
 therefore preserve existing results. `fastq filter-paired` accepts normalized
 `--r1` and `--r2` options while retaining legacy `-1` and `-2` aliases.
+The same validated-output behavior covers `split-kmers`, `sample`, and
+`single-to-paired`; the latter accepts normalized `--r1`/`--r2` names while
+retaining `--R1`/`--R2` and `-1`/`-2` compatibility aliases.
 
 Commands with option-based interfaces support `--help`; positional commands
 show a concise usage error when invoked without their required arguments.

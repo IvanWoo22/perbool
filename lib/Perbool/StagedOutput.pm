@@ -17,26 +17,27 @@ sub create_output_group {
     die "Standard output cannot be used in a staged output group\n"
       if grep { $_ eq '-' } @final_paths;
 
-    my $output_directory = dirname( $final_paths[0] );
-    die "Output directory does not exist: $output_directory\n"
-      unless -d $output_directory;
+    my %staging_directory_for;
     for my $path (@final_paths) {
-        die "All staged outputs must use the same directory\n"
-          unless dirname($path) eq $output_directory;
+        my $output_directory = dirname($path);
+        die "Output directory does not exist: $output_directory\n"
+          unless -d $output_directory;
         die "Output path is a directory: $path\n" if -d $path;
+        $staging_directory_for{$output_directory} ||= tempdir(
+            '.perbool-output-XXXXXX',
+            DIR     => $output_directory,
+            CLEANUP => 1,
+        );
     }
 
-    my $staging_directory = tempdir(
-        '.perbool-output-XXXXXX',
-        DIR     => $output_directory,
-        CLEANUP => 1,
-    );
     my @staged_paths;
     for my $index ( 0 .. $#final_paths ) {
         my $suffix = $final_paths[$index] =~ /[.]gz\z/i ? '.gz' : '';
+        my $output_directory = dirname( $final_paths[$index] );
         push @staged_paths,
           File::Spec->catfile(
-            $staging_directory, sprintf( 'output-%03d%s', $index + 1, $suffix ),
+            $staging_directory_for{$output_directory},
+            sprintf( 'output-%03d%s', $index + 1, $suffix ),
           );
     }
     return {
