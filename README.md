@@ -100,6 +100,13 @@ with replacement by default for backward compatibility. Use
 `--without-replacement` for conventional FASTQ subsampling and `--seed` when
 the sampled dataset must be reproducible.
 
+The maintained FASTQ conversion, selection, and length-filter commands accept
+gzip input and output through their normalized `--in`/`--out` interfaces.
+File outputs are written in the destination directory and committed only after
+the complete input validates; malformed later records or paired-ID mismatches
+therefore preserve existing results. `fastq filter-paired` accepts normalized
+`--r1` and `--r2` options while retaining legacy `-1` and `-2` aliases.
+
 Commands with option-based interfaces support `--help`; positional commands
 show a concise usage error when invoked without their required arguments.
 

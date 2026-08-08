@@ -59,6 +59,17 @@ is(
     'single-end filter uses biological sequence length without the newline',
 );
 
+my $normalized_single_out = path_for('normalized.single.filtered.fq');
+is(
+    system(
+        'bin/perbool', 'fastq', 'filter', '--in', $single_in,
+        '--out', $normalized_single_out, '--min', 4, '--max', 4,
+    ),
+    0,
+    'normalized single-end filter exits successfully',
+);
+is( read_text($normalized_single_out), read_text($single_out), 'normalized and legacy filters agree' );
+
 my $long_in      = path_for('long.fq');
 my $long_out     = path_for('long.filtered.fq');
 my $long_record  = "\@long\n" . ( 'A' x 1001 ) . "\n+\n" . ( 'I' x 1001 ) . "\n";
@@ -106,6 +117,27 @@ is(
     'paired filter keeps R2 synchronized with R1',
 );
 
+my $normalized_prefix = path_for('normalized.paired.filtered');
+is(
+    system(
+        'bin/perbool', 'fastq', 'filter-paired', '--r1', $r1_in,
+        '--r2', $r2_in, '--out', $normalized_prefix,
+        '--min', 4, '--max', 4,
+    ),
+    0,
+    'normalized paired-end filter exits successfully',
+);
+is(
+    read_text( $normalized_prefix . '_R1.fq' ),
+    read_text( $prefix . '_R1.fq' ),
+    'normalized paired R1 output agrees with legacy output',
+);
+is(
+    read_text( $normalized_prefix . '_R2.fq' ),
+    read_text( $prefix . '_R2.fq' ),
+    'normalized paired R2 output agrees with legacy output',
+);
+
 my $gzip_prefix = path_for('paired.gzip');
 is(
     system(
@@ -128,16 +160,27 @@ is(
 
 my $mismatch_r1 = path_for('mismatch.r1.fq');
 my $mismatch_r2 = path_for('mismatch.r2.fq');
-write_text( $mismatch_r1, "\@first/1\nACGT\n+\nIIII\n" );
-write_text( $mismatch_r2, "\@second/2\nTGCA\n+\nIIII\n" );
+write_text(
+    $mismatch_r1,
+    "\@pair1/1\nACGT\n+\nIIII\n\@first/1\nACGT\n+\nIIII\n",
+);
+write_text(
+    $mismatch_r2,
+    "\@pair1/2\nTGCA\n+\nIIII\n\@second/2\nTGCA\n+\nIIII\n",
+);
+my $mismatch_prefix = path_for('mismatch');
+write_text( $mismatch_prefix . '_R1.fq', "preserved R1\n" );
+write_text( $mismatch_prefix . '_R2.fq', "preserved R2\n" );
 isnt(
     system(
         $^X, 'filter_pfastq.pl', '-1', $mismatch_r1, '-2', $mismatch_r2,
-        '--out', path_for('mismatch'),
+        '--out', $mismatch_prefix,
     ),
     0,
     'paired filter rejects mismatched read IDs',
 );
+is( read_text( $mismatch_prefix . '_R1.fq' ), "preserved R1\n", 'paired failure preserves R1' );
+is( read_text( $mismatch_prefix . '_R2.fq' ), "preserved R2\n", 'paired failure preserves R2' );
 
 my $kmer_in  = path_for('kmer.fq');
 my $kmer_out = path_for('kmer.out.fq');
@@ -235,14 +278,20 @@ isnt(
 );
 
 my $broken_in = path_for('broken.fq');
-write_text( $broken_in, "\@broken\nACGT\n+\nIII\n" );
+write_text(
+    $broken_in,
+    "\@valid\nACGT\n+\nIIII\n\@broken\nACGT\n+\nIII\n",
+);
+my $broken_out = path_for('broken.out.fq');
+write_text( $broken_out, "preserved filtered output\n" );
 isnt(
     system(
         $^X, 'filter_fastq.pl', '--in', $broken_in,
-        '--out', path_for('broken.out.fq'),
+        '--out', $broken_out,
     ),
     0,
     'sequence and quality length mismatch is rejected',
 );
+is( read_text($broken_out), "preserved filtered output\n", 'failed filter preserves existing output' );
 
 done_testing();
