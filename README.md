@@ -35,9 +35,13 @@ perl fastqKmer.pl \
     -i test.fq -o test.out.fq
     
 perl fastq_randomsampling.pl \
-    -q 100 \
+    -q 100 --without-replacement --seed 42 \
     -i test.fq -o test.out.fq
 ```
+
+`fastq_randomsampling.pl` samples with replacement by default for backward
+compatibility. Use `--without-replacement` for conventional FASTQ subsampling
+and `--seed` when the sampled dataset must be reproducible.
 
 Each utility is an independent command-line script. Run scripts that support
 options with `--help` to see their complete usage.
