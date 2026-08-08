@@ -1,13 +1,9 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 
-while (<STDIN>) {
-    my @tmp = split "\t";
-    $tmp[ $ARGV[0] - 1 ] =~ /$ARGV[1](\w+)/;
-    $tmp[ $ARGV[0] - 1 ] = $1;
-    print( join( "\t", @tmp ) );
-}
+use Perbool::Command::TableExtractAfter qw(run);
 
-__END__
+exit run(@ARGV);

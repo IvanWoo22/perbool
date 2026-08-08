@@ -1,22 +1,9 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
-use warnings FATAL => 'all';
+use warnings;
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
 
-my %dist;
-while (<STDIN>) {
-    chomp( my $seq = <STDIN> );
-    readline;
-    readline;
-    if ( exists( $dist{ length($seq) } ) ) {
-        $dist{ length($seq) }++;
-    }
-    else {
-        $dist{ length($seq) } = 1;
-    }
-}
+use Perbool::Command::QcLengths qw(run);
 
-foreach ( sort { $a <=> $b } keys %dist ) {
-    print "$_\t$dist{$_}\n";
-}
-
-__END__
+exit run(@ARGV);

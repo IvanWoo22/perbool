@@ -1,23 +1,9 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 
-my %count;
-while (<STDIN>) {
-    chomp( my $seq = <STDIN> );
-    readline;
-    readline;
-    if ( exists( $count{$seq} ) ) {
-        $count{$seq}++;
-    }
-    else {
-        $count{$seq} = 1;
-    }
-}
+use Perbool::Command::FastqToCounts qw(run);
 
-foreach my $seq ( keys(%count) ) {
-    print("$seq\t$count{$seq}\n");
-}
-
-__END__
+exit run(@ARGV);

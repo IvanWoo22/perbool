@@ -1,14 +1,9 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 
-while (<STDIN>) {
-    $_ =~ s/^@/>/;
-    my $seq = <STDIN>;
-    readline;
-    readline;
-    print( $_, $seq );
-}
+use Perbool::Command::FastqToFasta qw(run);
 
-__END__
+exit run(@ARGV);
