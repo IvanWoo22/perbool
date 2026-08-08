@@ -44,7 +44,7 @@ sub run_command {
 }
 
 my @rows = command_rows();
-is( scalar @rows, 30, 'normalized CLI exposes the maintained command set' );
+is( scalar @rows, 31, 'normalized CLI exposes the maintained command set' );
 ok( -x 'bin/perbool', 'normalized CLI entry point is executable' );
 my %command_name;
 for my $row (@rows) {
@@ -64,6 +64,7 @@ like( $help_output, qr/^  sequence$/m, 'help groups sequence commands' );
 like( $help_output, qr/^  table$/m, 'help groups table commands' );
 like( $help_output, qr/^  genome$/m, 'help groups genome commands' );
 like( $help_output, qr/^  small-rna$/m, 'help groups small-RNA commands' );
+like( $help_output, qr/^  literature$/m, 'help groups literature commands' );
 like( $help_output, qr/^  fastq$/m, 'help groups FASTQ commands' );
 like( $help_output, qr/^  qc$/m, 'help groups QC commands' );
 

@@ -56,6 +56,7 @@ loading.
 | `perbool genome bed-to-yaml` | `bed2yml.pl` |
 | `perbool genome transcript-coordinate` | `coordinate_position.pl` |
 | `perbool small-rna tail-counts` | `mirna_count.pl` |
+| `perbool literature pubmed-search` | `extract_pubmed_info.pl` |
 | `perbool fastq fetch` | `fetch_fastq.pl` |
 | `perbool fastq delete` | `delete_fastq.pl` |
 | `perbool fastq filter` | `filter_fastq.pl` |

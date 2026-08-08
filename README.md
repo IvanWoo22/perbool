@@ -75,6 +75,10 @@ perbool small-rna tail-counts \
     --counts collapsed_reads.tsv.gz --fasta mature_mirna.fa.gz \
     >mirna_tail_counts.tsv
 
+perbool literature pubmed-search \
+    --queries topics.txt --min-year 2015 --retmax 100 \
+    --out pubmed_results.txt
+
 perbool fastq filter \
     --max 30 --min 20 \
     -i input.fq -o output.fq
@@ -141,6 +145,13 @@ read count for each FASTA reference. It accepts multiline or gzip FASTA and
 count tables, merges duplicate read-sequence rows case-insensitively, and uses
 literal prefix matching. The output retains the historical three-column form:
 complete FASTA header, exact count, and poly(A)-tail count.
+
+`perbool literature pubmed-search` runs the bundled RISmed backend without
+passing query text through a shell. Blank query lines are ignored, the search
+year range and result limit are configurable, and the maximum year defaults to
+the current year. All searches must succeed before the output file is opened,
+so a failed batch preserves any existing result. `RISmed` and `Rscript` are
+required only for this optional command.
 
 ## Project layout
 
