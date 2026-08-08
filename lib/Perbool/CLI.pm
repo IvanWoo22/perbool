@@ -5,41 +5,42 @@ use warnings;
 
 use Exporter qw(import);
 use File::Spec;
+use Perbool::Help qw(command_help has_command_help);
 
 our @EXPORT_OK = qw(command_rows run usage_text);
 
 my @COMMANDS = (
-    [ fasta => 'fetch',             'fetch_fasta.pl',             'fetch records by header or ID' ],
-    [ fasta => 'delete',            'delete_fasta.pl',            'delete records by ID list' ],
-    [ fasta => 'unique',            'unique_fasta.pl',            'deduplicate records by sequence' ],
-    [ fasta => 'find',              'find_seq_from_fasta.pl',     'find literal sequence matches' ],
-    [ fasta => 'extract-intervals', 'pick_seq_from_fasta_neo.pl', 'extract tabular intervals' ],
-    [ fasta => 'extract-locations', 'links2fasta.pl',             'extract compact location strings' ],
-    [ fasta => 'from-list',         'list2fasta.pl',              'build counted FASTA from a table' ],
-    [ fasta => 'substitute',        'snp4fasta.pl',               'apply independent substitutions' ],
-    [ fasta   => 'filter-composition', 'base_proportion.pl', 'filter by canonical-base fraction' ],
-    [ sequence => 'reverse-complement', 'rcdna.pl',          'reverse-complement an IUPAC sequence' ],
-    [ table => 'intersect-lines', 'compare_file.pl',      'intersect complete lines' ],
-    [ table => 'join',            'tsv_join.pl',          'full-outer join TSV files' ],
-    [ table => 'extract-after',   'format_column_name.pl','extract a suffix after a prefix' ],
-    [ table => 'count-duplicates','count_duplication.pl', 'bin distinct lines by frequency' ],
-    [ genome => 'bed-to-yaml', 'bed2yml.pl', 'merge BED intervals into YAML run lists' ],
-    [ genome => 'transcript-coordinate', 'coordinate_position.pl', 'map transcript to genomic coordinates' ],
-    [ 'small-rna' => 'tail-counts', 'mirna_count.pl', 'count exact and poly(A)-tailed reads' ],
-    [ literature => 'pubmed-search', 'extract_pubmed_info.pl', 'batch PubMed searches through RISmed' ],
-    [ fastq => 'fetch',             'fetch_fastq.pl',             'fetch reads by ID list' ],
-    [ fastq => 'delete',            'delete_fastq.pl',            'delete reads by ID list' ],
-    [ fastq => 'filter',            'filter_fastq.pl',            'filter single-end reads by length' ],
-    [ fastq => 'filter-paired',     'filter_pfastq.pl',           'filter paired reads by length' ],
-    [ fastq => 'split-kmers',       'fastqKmer.pl',               'split reads into fixed windows' ],
-    [ fastq => 'sample',            'fastq_randomsampling.pl',    'sample reads reproducibly' ],
-    [ fastq => 'to-fasta',          'fastq2fasta.pl',             'convert FASTQ to FASTA' ],
-    [ fastq => 'to-counts',         'fastq2count.pl',             'count distinct read sequences' ],
-    [ fastq => 'single-to-paired',  'singled2paired.pl',          'create paired reads from long reads' ],
-    [ qc    => 'end-bases',         'qc/end_base.pl',             'count terminal bases' ],
-    [ qc    => 'lengths',           'qc/length_distribution.pl',  'summarize read lengths' ],
-    [ qc    => 'paired-coordinates', 'qc/pe_coordinate.pl',      'compare paired read coordinates' ],
-    [ qc    => 'summary',           'qc/se_fqc.pl',               'build single-end QC summaries' ],
+    [ fasta => 'fetch',             'fetch_fasta.pl',             'select records by literal header text or exact first ID' ],
+    [ fasta => 'delete',            'delete_fasta.pl',            'remove records whose first IDs occur in a name list' ],
+    [ fasta => 'unique',            'unique_fasta.pl',            'keep the first record for each distinct complete sequence' ],
+    [ fasta => 'find',              'find_seq_from_fasta.pl',     'report every overlapping literal sequence match' ],
+    [ fasta => 'extract-intervals', 'pick_seq_from_fasta_neo.pl', 'extract strand-aware tabular intervals from a reference' ],
+    [ fasta => 'extract-locations', 'links2fasta.pl',             'extract compact ID:START-END locations from a reference' ],
+    [ fasta => 'from-list',         'list2fasta.pl',              'count a table sequence column and emit deterministic FASTA' ],
+    [ fasta => 'substitute',        'snp4fasta.pl',               'apply validated substitutions independently to reference records' ],
+    [ fasta   => 'filter-composition', 'base_proportion.pl', 'retain records above a canonical-base fraction' ],
+    [ sequence => 'reverse-complement', 'rcdna.pl',          'reverse-complement DNA/RNA with IUPAC ambiguity symbols' ],
+    [ table => 'intersect-lines', 'compare_file.pl',      'filter ordered lines by exact membership in another file' ],
+    [ table => 'join',            'tsv_join.pl',          'full-outer join validated TSV files on their first column' ],
+    [ table => 'extract-after',   'format_column_name.pl','extract a word suffix after a literal field prefix' ],
+    [ table => 'count-duplicates','count_duplication.pl', 'summarize distinct complete lines by occurrence frequency' ],
+    [ genome => 'bed-to-yaml', 'bed2yml.pl', 'merge BED intervals into 1-based inclusive YAML run lists' ],
+    [ genome => 'transcript-coordinate', 'coordinate_position.pl', 'map a transcript-relative position to a genomic coordinate' ],
+    [ 'small-rna' => 'tail-counts', 'mirna_count.pl', 'count exact and qualifying poly(A)-tailed reads per reference' ],
+    [ literature => 'pubmed-search', 'extract_pubmed_info.pl', 'run a validated batch of PubMed searches through RISmed' ],
+    [ fastq => 'fetch',             'fetch_fastq.pl',             'retain reads whose complete first IDs occur in a list' ],
+    [ fastq => 'delete',            'delete_fastq.pl',            'remove reads whose complete first IDs occur in a list' ],
+    [ fastq => 'filter',            'filter_fastq.pl',            'filter single-end reads by inclusive length bounds' ],
+    [ fastq => 'filter-paired',     'filter_pfastq.pl',           'filter synchronized pairs using both mate lengths' ],
+    [ fastq => 'split-kmers',       'fastqKmer.pl',               'split read sequences and qualities into fixed windows' ],
+    [ fastq => 'sample',            'fastq_randomsampling.pl',    'randomly sample complete reads with optional reproducibility' ],
+    [ fastq => 'to-fasta',          'fastq2fasta.pl',             'convert validated FASTQ records to two-line FASTA' ],
+    [ fastq => 'to-counts',         'fastq2count.pl',             'count identical read sequences and emit sorted TSV' ],
+    [ fastq => 'single-to-paired',  'singled2paired.pl',          'create synchronized mates from both ends of longer reads' ],
+    [ qc    => 'end-bases',         'qc/end_base.pl',             'count terminal canonical bases and total FASTQ reads' ],
+    [ qc    => 'lengths',           'qc/length_distribution.pl',  'produce a numeric FASTQ read-length distribution' ],
+    [ qc    => 'paired-coordinates', 'qc/pe_coordinate.pl',      'identify identical or reverse-complemented mate sequences' ],
+    [ qc    => 'summary',           'qc/se_fqc.pl',               'build staged TSV QC reports and an optional PDF' ],
 );
 
 sub command_rows {
@@ -60,14 +61,14 @@ USAGE
             $text .= "\n  $group\n";
             $current_group = $group;
         }
-        $text .= sprintf "    %-20s %s\n", $command, $description;
+        $text .= sprintf "    %-24s %s\n", $command, $description;
     }
 
     $text .= <<'USAGE';
 
-Commands with option-based interfaces support
-`perbool GROUP COMMAND --help`. See the README for positional commands.
-Legacy .pl entry points remain available during migration.
+Run `perbool help GROUP COMMAND` or `perbool GROUP COMMAND --help` for a
+detailed description of inputs, outputs, options, defaults, and an example.
+Legacy .pl entry points remain available for pipeline compatibility.
 USAGE
     return $text;
 }
@@ -102,6 +103,15 @@ sub run {
         warn "Unknown perbool command: $group $command\n\n";
         warn usage_text();
         return 2;
+    }
+
+    if ( @arguments == 1
+        && ( $arguments[0] eq '--help' || $arguments[0] eq '-h' ) )
+    {
+        die "Detailed command help is missing: $group $command\n"
+          unless has_command_help( $group, $command );
+        print command_help( $group, $command );
+        return 0;
     }
 
     my $script = File::Spec->catfile( $project_root, split m{/}, $row->[2] );

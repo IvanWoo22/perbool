@@ -27,73 +27,83 @@ export PATH="$PWD/bin:$PATH"
 perbool --help
 ```
 
+Every normalized command has a detailed help page describing its inputs,
+outputs, options, defaults, validation behavior, and a runnable example:
+
 ```shell
-perbool fasta fetch \
-    -f mature.fa \
-    --string "Spodoptera frugiperda" \
-    >sfr_mature.fa
-
-perbool fasta fetch \
-    -f transcripts.fa.gz \
-    --string transcript_001 --exact \
-    >transcript_001.fa
-
-perbool fasta unique input.fa.gz >unique.fa
-
-perbool fasta find \
-    --fa genome.fa.gz --seq ACGT
-
-perbool fasta extract-intervals \
-    --fa genome.fa.gz --in intervals.txt \
-    >intervals.fa
-
-perbool fasta delete \
-    --name remove.txt --in input.fa.gz --out retained.fa.gz
-
-perbool fasta substitute \
-    --fa reference.fa.gz --in variants.txt \
-    >alternate_sequences.fa
-
-perbool fasta filter-composition \
-    --base A --fraction-above 0.6 --in input.fa.gz \
-    >a_rich.fa
-
-perbool sequence reverse-complement ACGTRYMK
-
-perbool table join sample_a.tsv sample_b.tsv.gz >joined.tsv
-
-perbool table intersect-lines \
-    --left expected.txt --right observed.txt --unique
-
-perbool genome bed-to-yaml --in regions.bed.gz >regions.yml
-
-perbool genome transcript-coordinate \
-    --transcript ENST00000335137.4 --position 120 \
-    --in transcript_ranges.tsv.gz
-
-perbool small-rna tail-counts \
-    --counts collapsed_reads.tsv.gz --fasta mature_mirna.fa.gz \
-    >mirna_tail_counts.tsv
-
-perbool literature pubmed-search \
-    --queries topics.txt --min-year 2015 --retmax 100 \
-    --out pubmed_results.txt
-
-perbool fastq filter \
-    --max 30 --min 20 \
-    -i input.fq -o output.fq
-    
-perbool fastq split-kmers \
-    -K 20 \
-    -i test.fq -o test.out.fq
-    
-perbool fastq sample \
-    -q 100 --without-replacement --seed 42 \
-    -i test.fq -o test.out.fq
-
-perbool qc summary --no-plot --out-prefix qc/sample \
-    sample_R1.fq.gz sample_R2.fq.gz
+perbool help fasta fetch
+perbool fasta fetch --help
 ```
+
+Plain and gzip files are selected by filename suffix. Where documented, `-`
+means standard input or output. File outputs that use staged validation replace
+their destination only after all relevant input has been checked successfully.
+
+### FASTA commands
+
+| Command | What it does | Example |
+| --- | --- | --- |
+| `fasta fetch` | Select records by literal header text or exact first ID. | `perbool fasta fetch -f transcripts.fa.gz -s transcript_001 --exact -o hit.fa` |
+| `fasta delete` | Remove records whose first IDs occur in a name list. | `perbool fasta delete -n remove.txt -i input.fa.gz -o retained.fa.gz` |
+| `fasta unique` | Keep the first record for each distinct complete sequence. | `perbool fasta unique -i input.fa.gz -o unique.fa.gz` |
+| `fasta find` | Report every overlapping literal sequence match and its 1-based end coordinate. | `perbool fasta find -f genome.fa.gz -s ACGT -o matches.tsv` |
+| `fasta extract-intervals` | Extract strand-aware `ID START END STRAND [NAME]` intervals. | `perbool fasta extract-intervals -f genome.fa.gz -i intervals.tsv -o intervals.fa` |
+| `fasta extract-locations` | Extract compact `ID:START-END` location strings. | `perbool fasta extract-locations -f genome.fa.gz -i locations.txt -o regions.fa` |
+| `fasta from-list` | Count sequences in a selected table column and emit counted FASTA. | `perbool fasta from-list --file reads.tsv --col 2 --rna2dna >collapsed.fa` |
+| `fasta substitute` | Apply each validated `ID POSITION REF ALT` substitution independently. | `perbool fasta substitute -f reference.fa.gz -i variants.tsv >alternates.fa` |
+| `fasta filter-composition` | Retain records strictly above a canonical-base fraction. | `perbool fasta filter-composition -b A -f 0.6 -i input.fa.gz >a-rich.fa` |
+
+### Sequence commands
+
+| Command | What it does | Example |
+| --- | --- | --- |
+| `sequence reverse-complement` | Reverse-complement DNA/RNA with IUPAC ambiguity symbols. | `perbool sequence reverse-complement ACGTRYMK` |
+
+### Table commands
+
+| Command | What it does | Example |
+| --- | --- | --- |
+| `table intersect-lines` | Filter the right file to exact lines also found in the left file. | `perbool table intersect-lines -l expected.txt -r observed.txt --unique` |
+| `table join` | Full-outer join TSV files on their first column. | `perbool table join sample-a.tsv sample-b.tsv.gz >joined.tsv` |
+| `table extract-after` | Replace one TSV field with the word suffix after a literal prefix. | `perbool table extract-after -c 2 -p ID= -i attributes.tsv >ids.tsv` |
+| `table count-duplicates` | Count how many distinct lines occur at each frequency. | `perbool table count-duplicates -i barcodes.txt.gz >frequency.tsv` |
+
+### Genome commands
+
+| Command | What it does | Example |
+| --- | --- | --- |
+| `genome bed-to-yaml` | Merge BED intervals and emit 1-based inclusive YAML run lists. | `perbool genome bed-to-yaml -i regions.bed.gz >regions.yml` |
+| `genome transcript-coordinate` | Map a transcript-relative position to a genomic coordinate. | `perbool genome transcript-coordinate -t ENST00000335137.4 -p 120 -i ranges.tsv.gz` |
+
+### Small-RNA and literature commands
+
+| Command | What it does | Example |
+| --- | --- | --- |
+| `small-rna tail-counts` | Count exact and qualifying poly(A)-tailed reads per reference. | `perbool small-rna tail-counts -c reads.tsv.gz -f mature.fa.gz >tails.tsv` |
+| `literature pubmed-search` | Run a validated RISmed PubMed query batch. | `perbool literature pubmed-search -q topics.txt --min-year 2020 -o results.txt` |
+
+### FASTQ commands
+
+| Command | What it does | Example |
+| --- | --- | --- |
+| `fastq fetch` | Retain reads whose complete first IDs occur in a list. | `perbool fastq fetch -n ids.txt -i reads.fq.gz -o selected.fq.gz` |
+| `fastq delete` | Remove reads whose complete first IDs occur in a list. | `perbool fastq delete -n ids.txt -i reads.fq.gz -o retained.fq.gz` |
+| `fastq filter` | Filter single-end reads by inclusive length bounds. | `perbool fastq filter -i reads.fq.gz -o kept.fq.gz -m 20 -M 30` |
+| `fastq filter-paired` | Keep synchronized pairs when both mates satisfy length bounds. | `perbool fastq filter-paired --r1 R1.fq.gz --r2 R2.fq.gz -o kept --gzip` |
+| `fastq split-kmers` | Split reads and qualities into fixed-length windows. | `perbool fastq split-kmers -i reads.fq.gz -o windows.fq.gz -K 20 -S 5` |
+| `fastq sample` | Randomly sample complete records, optionally without replacement. | `perbool fastq sample -i reads.fq.gz -o sample.fq.gz -q 1000 --seed 42 --without-replacement` |
+| `fastq to-fasta` | Convert validated FASTQ records to two-line FASTA. | `perbool fastq to-fasta -i reads.fq.gz -o reads.fa.gz` |
+| `fastq to-counts` | Count identical read sequences and emit sorted TSV. | `perbool fastq to-counts -i reads.fq.gz -o counts.tsv.gz` |
+| `fastq single-to-paired` | Create R1/R2 reads from the two ends of longer reads. | `perbool fastq single-to-paired -i long.fq.gz -l 100 --r1 R1.fq.gz --r2 R2.fq.gz` |
+
+### QC commands
+
+| Command | What it does | Example |
+| --- | --- | --- |
+| `qc end-bases` | Count terminal A/G/C/T bases and total reads. | `perbool qc end-bases -i reads.fq.gz >end-bases.tsv` |
+| `qc lengths` | Produce a numeric FASTQ read-length distribution. | `perbool qc lengths -i reads.fq.gz >lengths.tsv` |
+| `qc paired-coordinates` | Find pairs whose sequences are identical or reverse complements. | `perbool qc paired-coordinates --r1 R1.fq.gz --r2 R2.fq.gz >concordant.txt` |
+| `qc summary` | Build staged TSV QC reports and an optional PDF. | `perbool qc summary --no-plot -o qc/sample sample_R1.fq.gz sample_R2.fq.gz` |
 
 `perbool fastq sample` (legacy entry point: `fastq_randomsampling.pl`) samples
 with replacement by default for backward compatibility. Use
@@ -117,13 +127,14 @@ output while retaining standard output as the default. Query, interval, and
 compact-location lists also support gzip input. Existing output files are left
 unchanged when a malformed later FASTA record, interval, or location is found.
 
-Commands with option-based interfaces support `--help`; positional commands
-show a concise usage error when invoked without their required arguments.
+Every normalized command supports both `perbool GROUP COMMAND --help` and
+`perbool help GROUP COMMAND`, including commands that retain positional
+compatibility forms.
 
 `bin/perbool` is the stable command namespace. It uses lowercase groups and
 kebab-case commands, such as `perbool fasta extract-intervals`. Historical
-root-level `.pl` commands remain available as compatibility entry points while
-their implementations are migrated.
+root-level `.pl` commands remain available as compatibility entry points; all
+registered command logic now lives in `lib/Perbool/Command/` modules.
 
 FASTA readers accept multiline records, and the migrated extraction and
 deduplication tools transparently read `.gz` input. `fetch_fasta.pl` searches

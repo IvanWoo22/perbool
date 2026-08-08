@@ -9,6 +9,7 @@ use Test::More;
 
 use lib 'lib';
 use Perbool::CLI qw(command_rows);
+use Perbool::Help qw(has_command_help);
 
 my $tempdir = tempdir( CLEANUP => 1 );
 
@@ -44,10 +45,12 @@ sub run_command {
 }
 
 my @rows = command_rows();
+my $readme = read_text('README.md');
 is( scalar @rows, 31, 'normalized CLI exposes the maintained command set' );
 ok( -x 'bin/perbool', 'normalized CLI entry point is executable' );
 my %command_name;
 for my $row (@rows) {
+    my ( $group, $command ) = @{$row}[ 0, 1 ];
     like( $row->[0], qr/\A[a-z][a-z0-9-]*\z/, 'group name is normalized' );
     like( $row->[1], qr/\A[a-z][a-z0-9-]*\z/, 'command name is normalized' );
     ok( !$command_name{ "$row->[0] $row->[1]" }++, 'group-command pair is unique' );
@@ -68,6 +71,31 @@ for my $row (@rows) {
         qr/^exit run\s*\(/m,
         "$row->[0] $row->[1] delegates execution to the module",
     );
+    ok(
+        has_command_help( $row->[0], $row->[1] ),
+        "$row->[0] $row->[1] has detailed help metadata",
+    );
+    my ( $command_help_status, $command_help_output, $command_help_error ) =
+      run_command( undef, 'bin/perbool', $row->[0], $row->[1], '--help' );
+    is( $command_help_status, 0, "$row->[0] $row->[1] help exits successfully" );
+    is( $command_help_error, '', "$row->[0] $row->[1] help emits no errors" );
+    for my $section (qw(Usage Description Input Output Options Example)) {
+        like(
+            $command_help_output,
+            qr/^\Q$section\E:$/m,
+            "$row->[0] $row->[1] help includes $section",
+        );
+    }
+    like(
+        $command_help_output,
+        qr/^  perbool \Q$group $command\E(?:\s|$)/m,
+        "$row->[0] $row->[1] help includes a normalized example",
+    );
+    like(
+        $readme,
+        qr/[|]\s*`\Q$group $command\E`\s*[|]/,
+        "$row->[0] $row->[1] is described in the README command reference",
+    );
 }
 
 my ( $help_status, $help_output, $help_error ) =
@@ -83,6 +111,16 @@ like( $help_output, qr/^  small-rna$/m, 'help groups small-RNA commands' );
 like( $help_output, qr/^  literature$/m, 'help groups literature commands' );
 like( $help_output, qr/^  fastq$/m, 'help groups FASTQ commands' );
 like( $help_output, qr/^  qc$/m, 'help groups QC commands' );
+
+my ( $help_command_status, $help_command_output, $help_command_error ) =
+  run_command( undef, 'bin/perbool', 'help', 'fastq', 'sample' );
+my ( $flag_help_status, $flag_help_output, $flag_help_error ) =
+  run_command( undef, 'bin/perbool', 'fastq', 'sample', '--help' );
+is( $help_command_status, 0, 'help GROUP COMMAND exits successfully' );
+is( $help_command_error, '', 'help GROUP COMMAND emits no errors' );
+is( $help_command_output, $flag_help_output, 'help subcommand and --help are identical' );
+is( $flag_help_status, 0, '--help comparison command exits successfully' );
+is( $flag_help_error, '', '--help comparison command emits no errors' );
 
 my ( $unknown_status, $unknown_output, $unknown_error ) =
   run_command( undef, 'bin/perbool', 'fasta', 'not-a-command' );
