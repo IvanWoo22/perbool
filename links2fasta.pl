@@ -4,8 +4,6 @@ use warnings;
 use autodie;
 use Getopt::Long;
 
-use App::Fasops::Common;
-
 Getopt::Long::GetOptions(
     'help|h' => sub { Getopt::Long::HelpMessage(0) },
     'in|i=s' => \my $in_list,
@@ -22,6 +20,34 @@ sub SEQ_REV_COMP {
 sub SEQ_TR_TU {
     my $SEQ = shift;
     return ( $SEQ =~ tr/Uu/Tt/r );
+}
+
+sub DECODE_LOCATION {
+    my $header = shift;
+    my $location_re = qr{
+        (?:(?<name>[\w_]+)[.])?
+        (?<chr>[\w-]+)
+        (?:[(](?<strand>.+)[)])?
+        :
+        (?<start>\d+)
+        [_-]?
+        (?<end>\d+)?
+    }xi;
+
+    return unless $header =~ $location_re;
+
+    my $strand = $+{strand};
+    if ( defined $strand ) {
+        $strand = '+' if $strand eq '1';
+        $strand = '-' if $strand eq '-1';
+    }
+
+    return {
+        chr    => $+{chr},
+        strand => $strand,
+        start  => $+{start},
+        end    => defined $+{end} ? $+{end} : $+{start},
+    };
 }
 
 my %fasta;
@@ -43,7 +69,7 @@ if ( defined($in_list) ) {
     while (<$SEG>) {
         s/\r?\n//;
         my $seq = fetch_seq($_);
-        print("$seq\n");
+        print $seq;
     }
     close($SEG);
 }
@@ -51,7 +77,7 @@ elsif ( defined($stdin) ) {
     while (<>) {
         s/\r?\n//;
         my $seq = fetch_seq($_);
-        print("$seq\n");
+        print $seq;
     }
 }
 else {
@@ -59,17 +85,11 @@ else {
 }
 
 sub fetch_seq {
-    my $line        = $_;
-    my $info_of     = {};
+    my $line        = shift;
     my $out_content = "";
-    $info_of = App::Fasops::Common::build_info( [$line], $info_of );
-    my @parts;
-    for my $part ( split /\t/, $line ) {
-        next unless exists $info_of->{$part};
-        push @parts, $part;
-    }
-    for my $range (@parts) {
-        my $info = $info_of->{$range};
+    for my $range ( split /\t/, $line ) {
+        my $info = DECODE_LOCATION($range);
+        next unless defined $info;
         if ( exists( $fasta{ $info->{chr} } ) ) {
             my $length = abs( $info->{end} - $info->{start} ) + 1;
             my $seq =
@@ -88,7 +108,7 @@ sub fetch_seq {
             }
         }
         else {
-            warn("Sorry, there is no such a segment: $_\n");
+            warn("Sorry, there is no such a segment: $range\n");
         }
     }
     return ($out_content);
