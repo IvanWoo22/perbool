@@ -2,8 +2,13 @@
 use strict;
 use warnings;
 use autodie;
-use IO::Zlib;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 use Getopt::Long;
+
+use Perbool::Fastq qw(
+  assert_distinct_paths open_fastq_reader open_fastq_writer read_fastq_record
+);
 
 =head1 NAME
 
@@ -41,56 +46,9 @@ Getopt::Long::GetOptions(
 die "--in, --out, and --quantity are required\n"
   unless defined $in_fq && defined $out_fq && defined $quantity;
 die "--quantity must be a positive integer\n" unless $quantity > 0;
-die "--in and --out must refer to different files\n" if $in_fq eq $out_fq;
+assert_distinct_paths( $in_fq, $out_fq );
 
 srand($seed) if defined $seed;
-
-sub OPEN_INPUT {
-    my $path = shift;
-    if ( $path =~ /[.]gz\z/ ) {
-        my $fh = IO::Zlib->new( $path, 'rb' )
-          or die "Cannot open $path: $!\n";
-        return $fh;
-    }
-    open my $fh, '<', $path;
-    return $fh;
-}
-
-sub OPEN_OUTPUT {
-    my $path = shift;
-    if ( $path =~ /[.]gz\z/ ) {
-        my $fh = IO::Zlib->new( $path, 'wb9' )
-          or die "Cannot open $path: $!\n";
-        return $fh;
-    }
-    open my $fh, '>', $path;
-    return $fh;
-}
-
-sub READ_RECORD {
-    my ( $fh, $record_number ) = @_;
-    my $qname = <$fh>;
-    return unless defined $qname;
-
-    my $sequence = <$fh>;
-    my $plus     = <$fh>;
-    my $quality  = <$fh>;
-    die "Truncated FASTQ record $record_number\n"
-      unless defined $sequence && defined $plus && defined $quality;
-    die "Invalid FASTQ header in record $record_number: $qname"
-      unless $qname =~ /^@/;
-    die "Invalid FASTQ separator in record $record_number: $plus"
-      unless $plus =~ /^[+]/;
-
-    my $sequence_value = $sequence;
-    my $quality_value  = $quality;
-    $sequence_value =~ s/\r?\n\z//;
-    $quality_value  =~ s/\r?\n\z//;
-    die "Sequence and quality lengths differ in FASTQ record $record_number\n"
-      unless length($sequence_value) == length($quality_value);
-
-    return [ $qname, $sequence, $plus, $quality ];
-}
 
 sub SAMPLE_WITHOUT_REPLACEMENT {
     my ( $total, $wanted ) = @_;
@@ -106,9 +64,9 @@ sub SAMPLE_WITHOUT_REPLACEMENT {
     return sort { $a <=> $b } keys %selected;
 }
 
-my $count_fh = OPEN_INPUT($in_fq);
+my $count_fh = open_fastq_reader($in_fq);
 my $record_count = 0;
-while ( READ_RECORD( $count_fh, $record_count + 1 ) ) {
+while ( read_fastq_record( $count_fh, $record_count + 1 ) ) {
     $record_count++;
 }
 close $count_fh;
@@ -133,9 +91,9 @@ for my $output_position ( 0 .. $#sample_indices ) {
 }
 
 my @sampled_records;
-my $sample_fh = OPEN_INPUT($in_fq);
+my $sample_fh = open_fastq_reader($in_fq);
 for my $record_index ( 0 .. $record_count - 1 ) {
-    my $record = READ_RECORD( $sample_fh, $record_index + 1 );
+    my $record = read_fastq_record( $sample_fh, $record_index + 1 );
     next unless exists $positions_for{$record_index};
     for my $output_position ( @{ $positions_for{$record_index} } ) {
         $sampled_records[$output_position] = $record;
@@ -143,10 +101,11 @@ for my $record_index ( 0 .. $record_count - 1 ) {
 }
 close $sample_fh;
 
-my $out_fh = OPEN_OUTPUT($out_fq);
+my $out_fh = open_fastq_writer($out_fq);
 for my $output_position ( 0 .. $#sampled_records ) {
-    my ( $qname, $sequence, $plus, $quality ) =
-      @{ $sampled_records[$output_position] };
+    my $record = $sampled_records[$output_position];
+    my $qname  = $record->{header};
+    my $plus   = $record->{separator};
     $qname =~ s/\r?\n\z//;
     my ( $read_id, @description ) = split /\s+/, $qname;
     $read_id .= ':' . ( $output_position + 1 );
@@ -154,7 +113,8 @@ for my $output_position ( 0 .. $#sampled_records ) {
     if ( $plus !~ /^[+]\s*\r?\n\z/ ) {
         $plus = '+' . substr( $output_qname, 1 ) . "\n";
     }
-    print {$out_fh} "$output_qname\n$sequence$plus$quality";
+    print {$out_fh}
+      "$output_qname\n$record->{sequence}$plus$record->{quality}";
 }
 close $out_fh;
 
