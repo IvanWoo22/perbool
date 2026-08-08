@@ -14,6 +14,8 @@ our @EXPORT_OK = qw(
   fastq_id
   open_fastq_reader
   open_fastq_writer
+  paired_fastq_id
+  quality_text
   read_fastq_record
   sequence_text
   write_fastq_record
@@ -102,11 +104,25 @@ sub fastq_id {
     return $1;
 }
 
+sub paired_fastq_id {
+    my $record = shift;
+    my $id = fastq_id($record);
+    $id =~ s{/([12])\z}{};
+    return $id;
+}
+
 sub sequence_text {
     my $record = shift;
     my $sequence = $record->{sequence};
     $sequence =~ s/\r?\n\z//;
     return $sequence;
+}
+
+sub quality_text {
+    my $record = shift;
+    my $quality = $record->{quality};
+    $quality =~ s/\r?\n\z//;
+    return $quality;
 }
 
 sub write_fastq_record {

@@ -2,8 +2,14 @@
 use strict;
 use warnings;
 use autodie;
-use IO::Zlib;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 use Getopt::Long;
+
+use Perbool::Fastq qw(
+  assert_distinct_paths open_fastq_reader open_fastq_writer quality_text
+  read_fastq_record sequence_text
+);
 
 =head1 NAME
 
@@ -37,6 +43,7 @@ die "--in, --out, and --kmer are required\n"
 $step = 1 unless defined $step;
 die "--kmer and --step must be positive integers\n"
   unless $kmer > 0 && $step > 0;
+assert_distinct_paths( $in_fq, $out_fq );
 
 sub SPLIT_STR {
     my ( $STR, $LENGTH, $STEP ) = @_;
@@ -53,23 +60,8 @@ sub SPLIT_STR {
     return \@READS;
 }
 
-my $in_fh;
-if ( $in_fq =~ /[.]gz$/ ) {
-    $in_fh = IO::Zlib->new( $in_fq, "rb" )
-      or die "Cannot open $in_fq: $!\n";
-}
-else {
-    open( $in_fh, "<", $in_fq );
-}
-
-my $out_fh;
-if ( $out_fq =~ /[.]gz$/ ) {
-    $out_fh = IO::Zlib->new( $out_fq, "wb9" )
-      or die "Cannot open $out_fq: $!\n";
-}
-else {
-    open( $out_fh, ">", $out_fq );
-}
+my $in_fh  = open_fastq_reader($in_fq);
+my $out_fh = open_fastq_writer($out_fq);
 
 if ( !defined $prefix ) {
     $prefix = "";
@@ -78,20 +70,13 @@ else {
     $prefix = ":" . $prefix;
 }
 
-while (<$in_fh>) {
-    my $qname = $_;
+my $record_number = 0;
+while ( my $record = read_fastq_record( $in_fh, ++$record_number ) ) {
+    my $qname = $record->{header};
     $qname =~ s/\r?\n\z//;
     my @qntemp   = split( /\s+/, $qname );
-    my $sequence = <$in_fh>;
-    my $t = <$in_fh>;
-    my $quality = <$in_fh>;
-    die "Truncated FASTQ record after $qname\n"
-      unless defined $sequence && defined $t && defined $quality;
-    $sequence =~ s/\r?\n\z//;
-    $t        =~ s/\r?\n\z//;
-    $quality  =~ s/\r?\n\z//;
-    die "Sequence and quality lengths differ for $qname\n"
-      unless length($sequence) == length($quality);
+    my $sequence = sequence_text($record);
+    my $quality  = quality_text($record);
 
     if ( $kmer <= length($sequence) ) {
         my $seq = SPLIT_STR( $sequence, $kmer, $step );
@@ -102,9 +87,11 @@ while (<$in_fh>) {
                 $new_qname .= " " . join( " ", @qntemp[ 1 .. $#qntemp ] );
             }
             print $out_fh
-              "$new_qname\n${$seq}[$i]\n$t\n${$qua}[$i]\n";
+              "$new_qname\n${$seq}[$i]\n+\n${$qua}[$i]\n";
         }
     }
 }
+close $in_fh  unless $in_fq  eq '-';
+close $out_fh unless $out_fq eq '-';
 
 __END__

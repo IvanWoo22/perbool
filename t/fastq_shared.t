@@ -10,7 +10,8 @@ use Test::More;
 
 use lib 'lib';
 use Perbool::Fastq qw(
-  fastq_id read_fastq_record sequence_text write_fastq_record
+  fastq_id paired_fastq_id quality_text read_fastq_record sequence_text
+  write_fastq_record
 );
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -75,6 +76,18 @@ open my $scalar_in, '<', \$input_content;
 my $first_record = read_fastq_record( $scalar_in, 1 );
 is( fastq_id($first_record), 'read1', 'shared parser extracts the read ID' );
 is( sequence_text($first_record), 'AAA', 'shared parser returns sequence text' );
+is( quality_text($first_record), 'III', 'shared parser returns quality text' );
+is(
+    paired_fastq_id($first_record),
+    'read1',
+    'paired ID normalization leaves an unsuffixed ID unchanged',
+);
+my %suffixed_record = ( %{$first_record}, header => "\@read1/1 alpha\n" );
+is(
+    paired_fastq_id(\%suffixed_record),
+    'read1',
+    'paired ID normalization removes a slash mate suffix',
+);
 my $scalar_output = '';
 open my $scalar_out, '>', \$scalar_output;
 write_fastq_record( $scalar_out, $first_record );

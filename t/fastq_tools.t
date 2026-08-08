@@ -141,7 +141,10 @@ isnt(
 
 my $kmer_in  = path_for('kmer.fq');
 my $kmer_out = path_for('kmer.out.fq');
-write_text( $kmer_in, "\@read1 description\nACGTACGTAA\n+\nJJJJJJJJJJ\n" );
+write_text(
+    $kmer_in,
+    "\@read1 description\nACGTACGTAA\n+read1 description\nJJJJJJJJJJ\n",
+);
 is(
     system(
         $^X, 'fastqKmer.pl', '--in', $kmer_in, '--out', $kmer_out,
@@ -175,6 +178,51 @@ is(
       . "\@read2_1\nCGT\n+\nIII\n"
       . "\@read2_2\nGTA\n+\nIII\n",
     'default step emits all sliding windows without corrupting a bare read ID',
+);
+
+my $paired_source = path_for('long-read.fq');
+my $left_out = path_for('left.fq');
+my $right_out = path_for('right.fq');
+write_text(
+    $paired_source,
+    "\@long description\nAAACCGTA\n+long description\n12345678\n"
+      . "\@bare\nACGT\n+\nIIII\n",
+);
+is(
+    system(
+        $^X, 'singled2paired.pl', '--in', $paired_source, '--length', 3,
+        '--R1', $left_out, '--R2', $right_out,
+    ),
+    0,
+    'single-to-paired conversion exits successfully',
+);
+is(
+    read_text($left_out),
+    "\@long 1 description\nAAA\n+\n123\n"
+      . "\@bare 1\nACG\n+\nIII\n",
+    'left output contains the first bases and qualities with valid headers',
+);
+is(
+    read_text($right_out),
+    "\@long 2 description\nTAC\n+\n876\n"
+      . "\@bare 2\nACG\n+\nIII\n",
+    'right output reverse-complements sequence and reverses quality',
+);
+isnt(
+    system(
+        $^X, 'singled2paired.pl', '--in', $paired_source, '--length', 3,
+        '--R1', path_for('same.fq'), '--R2', path_for('same.fq'),
+    ),
+    0,
+    'single-to-paired conversion rejects identical output paths',
+);
+isnt(
+    system(
+        $^X, 'singled2paired.pl', '--in', $paired_source, '--length', 0,
+        '--R1', path_for('zero.R1.fq'), '--R2', path_for('zero.R2.fq'),
+    ),
+    0,
+    'single-to-paired conversion rejects a zero read length',
 );
 
 isnt(
