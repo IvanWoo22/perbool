@@ -1,194 +1,147 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
-use warnings FATAL => 'all';
-use File::Basename;
-use PerlIO::gzip;
+use warnings;
+use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+use Getopt::Long;
 
-my $dirname = dirname(__FILE__);
+use Perbool::Fastq qw(open_fastq_reader read_fastq_record sequence_text);
 
-sub TAIL_BASE_COUNT {
-    my %SEQ = @_;
-    my ( $A_COUNT, $G_COUNT, $C_COUNT, $T_COUNT, $TOTAL_COUNT ) =
-      ( 0, 0, 0, 0, 0 );
-    foreach ( keys(%SEQ) ) {
-        chomp( my $SEQ_STRING = $_ );
-        $TOTAL_COUNT += $SEQ{$_};
-        my @SEQ = split( //, $SEQ_STRING );
-        if ( $SEQ[-1] eq "A" ) {
-            $A_COUNT += $SEQ{$_};
-        }
-        elsif ( $SEQ[-1] eq "G" ) {
-            $G_COUNT += $SEQ{$_};
-        }
-        elsif ( $SEQ[-1] eq "C" ) {
-            $C_COUNT += $SEQ{$_};
-        }
-        elsif ( $SEQ[-1] eq "T" ) {
-            $T_COUNT += $SEQ{$_};
-        }
-    }
+=head1 NAME
 
-    return ( $A_COUNT, $G_COUNT, $C_COUNT, $T_COUNT, $TOTAL_COUNT );
-}
+se_fqc.pl -- Summarize base composition and read lengths for FASTQ samples.
 
-sub HEAD_BASE_COUNT {
-    my %SEQ = @_;
-    my ( $A_COUNT, $G_COUNT, $C_COUNT, $T_COUNT, $TOTAL_COUNT ) =
-      ( 0, 0, 0, 0, 0 );
-    foreach ( keys(%SEQ) ) {
-        chomp( my $SEQ_STRING = $_ );
-        $TOTAL_COUNT += $SEQ{$_};
-        my @SEQ = split( //, $SEQ_STRING );
-        if ( $SEQ[0] eq "A" ) {
-            $A_COUNT += $SEQ{$_};
+=head1 SYNOPSIS
+
+    perl qc/se_fqc.pl [--no-plot] sample1.fq.gz sample2.fq.gz OUTPUT_PREFIX
+
+        Options:
+            --help|-h   Brief help message
+            --no-plot   Write TSV summaries without invoking the R plot script
+
+=cut
+
+Getopt::Long::GetOptions(
+    'help|h'  => sub { Getopt::Long::HelpMessage(0) },
+    'no-plot' => \my $no_plot,
+) or Getopt::Long::HelpMessage(1);
+
+die "At least one FASTQ input and an output prefix are required\n"
+  unless @ARGV >= 2;
+my $output_prefix = pop @ARGV;
+my @input_paths = @ARGV;
+
+my @stats;
+for my $sample_index ( 0 .. $#input_paths ) {
+    my $input_path = $input_paths[$sample_index];
+    my $in_fh = open_fastq_reader($input_path);
+    my $sample = {
+        reads       => 0,
+        body        => { map { $_ => 0 } qw(A G C T) },
+        head        => { map { $_ => 0 } qw(A G C T) },
+        tail        => { map { $_ => 0 } qw(A G C T) },
+        length_dist => {},
+        min_length  => undef,
+        max_length  => undef,
+    };
+
+    while (
+        my $record =
+        read_fastq_record( $in_fh, $sample->{reads} + 1 )
+      )
+    {
+        $sample->{reads}++;
+        my $sequence = uc sequence_text($record);
+        my $length = length($sequence);
+        $sample->{length_dist}{$length}++;
+        $sample->{min_length} = $length
+          if !defined $sample->{min_length}
+          || $length < $sample->{min_length};
+        $sample->{max_length} = $length
+          if !defined $sample->{max_length}
+          || $length > $sample->{max_length};
+
+        for my $base ( split //, $sequence ) {
+            $sample->{body}{$base}++ if exists $sample->{body}{$base};
         }
-        elsif ( $SEQ[0] eq "G" ) {
-            $G_COUNT += $SEQ{$_};
-        }
-        elsif ( $SEQ[0] eq "C" ) {
-            $C_COUNT += $SEQ{$_};
-        }
-        elsif ( $SEQ[0] eq "T" ) {
-            $T_COUNT += $SEQ{$_};
-        }
-    }
-
-    return ( $A_COUNT, $G_COUNT, $C_COUNT, $T_COUNT, $TOTAL_COUNT );
-}
-
-sub BODY_BASE_COUNT {
-    my %SEQ = @_;
-    my ( $A_COUNT, $G_COUNT, $C_COUNT, $T_COUNT, $TOTAL_COUNT ) =
-      ( 0, 0, 0, 0, 0 );
-    foreach ( keys(%SEQ) ) {
-        chomp( my $SEQ_STRING = $_ );
-        my @SEQ = split( //, $SEQ_STRING );
-        foreach my $BASE (@SEQ) {
-            if ( $BASE eq "A" ) {
-                $A_COUNT     += $SEQ{$_};
-                $TOTAL_COUNT += $SEQ{$_};
-            }
-            elsif ( $BASE eq "G" ) {
-                $G_COUNT     += $SEQ{$_};
-                $TOTAL_COUNT += $SEQ{$_};
-            }
-            elsif ( $BASE eq "C" ) {
-                $C_COUNT     += $SEQ{$_};
-                $TOTAL_COUNT += $SEQ{$_};
-            }
-            elsif ( $BASE eq "T" ) {
-                $T_COUNT     += $SEQ{$_};
-                $TOTAL_COUNT += $SEQ{$_};
-            }
-        }
-
-    }
-
-    return ( $A_COUNT, $G_COUNT, $C_COUNT, $T_COUNT, $TOTAL_COUNT );
-}
-
-my (
-    @head_a,      @head_g,              @head_c,   @head_t,
-    @head_sum,    @tail_a,              @tail_g,   @tail_c,
-    @tail_t,      @tail_sum,            @body_a,   @body_g,
-    @body_c,      @body_t,              @body_sum, @length_range,
-    @reads_count, %length_distribution, @short,    @long
-);
-
-foreach my $sample ( 0 .. $#ARGV - 1 ) {
-    open(my $in_fh,"<:gzip",$ARGV[$sample]) or die"$!";
-    my %seq;
-    $reads_count[$sample] = 0;
-    while (<$in_fh>) {
-        $reads_count[$sample]++;
-        chomp( my $seq_string = <$in_fh> );
-        readline($in_fh);
-        readline($in_fh);
-        if ( exists( $seq{$seq_string} ) ) {
-            $seq{$seq_string}++;
-        }
-        else {
-            $seq{$seq_string} = 1;
+        if ($length) {
+            my $head_base = substr( $sequence, 0,  1 );
+            my $tail_base = substr( $sequence, -1, 1 );
+            $sample->{head}{$head_base}++ if exists $sample->{head}{$head_base};
+            $sample->{tail}{$tail_base}++ if exists $sample->{tail}{$tail_base};
         }
     }
+    close $in_fh unless $input_path eq '-';
+    push @stats, $sample;
+}
 
-    (
-        $body_a[$sample], $body_g[$sample], $body_c[$sample],
-        $body_t[$sample], $body_sum[$sample]
-    ) = BODY_BASE_COUNT(%seq);
-    (
-        $head_a[$sample], $head_g[$sample], $head_c[$sample],
-        $head_t[$sample], $head_sum[$sample]
-    ) = HEAD_BASE_COUNT(%seq);
-    (
-        $tail_a[$sample], $tail_g[$sample], $tail_c[$sample],
-        $tail_t[$sample], $tail_sum[$sample]
-    ) = TAIL_BASE_COUNT(%seq);
+my $body_path   = $output_prefix . '_body.tsv';
+my $head_path   = $output_prefix . '_head.tsv';
+my $tail_path   = $output_prefix . '_tail.tsv';
+my $summary_path = $output_prefix . '_summary.tsv';
+my $length_path = $output_prefix . '_length.tsv';
 
-    my $short = 200;
-    my $long  = 1;
-    foreach my $seq_string ( keys(%seq) ) {
-        my $length = length($seq_string);
-        if ( exists( $length_distribution{ $ARGV[$sample] . "\t" . $length } ) )
-        {
-            $length_distribution{ $ARGV[$sample] . "\t" . $length } +=
-              $seq{$seq_string};
-        }
-        else {
-            $length_distribution{ $ARGV[$sample] . "\t" . $length } =
-              $seq{$seq_string};
-        }
-        $short = $length if ( $short > $length );
-        $long  = $length if ( $long < $length );
+sub WRITE_BASE_TABLE {
+    my ( $path, $section ) = @_;
+    open my $fh, '>', $path;
+    print {$fh} join( "\t", @input_paths ), "\n";
+    for my $base (qw(A G C T)) {
+        print {$fh} join( "\t", map { $_->{$section}{$base} } @stats ), "\n";
     }
-    $length_range[$sample] = $short . " - " . $long;
-    $short[$sample]        = $short;
-    $long[$sample]         = $long;
+    my @totals =
+      $section eq 'body'
+      ? map {
+        my $sample = $_;
+        my $total = 0;
+        $total += $sample->{body}{$_} for qw(A G C T);
+        $total;
+      } @stats
+      : map { $_->{reads} } @stats;
+    print {$fh} join( "\t", @totals ), "\n";
+    close $fh;
 }
 
-my $name = join( "\t", @ARGV[ 0 .. $#ARGV - 1 ] );
+WRITE_BASE_TABLE( $body_path, 'body' );
+WRITE_BASE_TABLE( $head_path, 'head' );
+WRITE_BASE_TABLE( $tail_path, 'tail' );
 
-my $body_a   = join( "\t", @body_a );
-my $body_g   = join( "\t", @body_g );
-my $body_c   = join( "\t", @body_c );
-my $body_t   = join( "\t", @body_t );
-my $body_sum = join( "\t", @body_sum );
+open my $summary_fh, '>', $summary_path;
+print {$summary_fh} join( "\t", @input_paths ), "\n";
+print {$summary_fh} join( "\t", map { $_->{reads} } @stats ), "\n";
+print {$summary_fh} join(
+    "\t",
+    map {
+        defined $_->{min_length}
+          ? $_->{min_length} . ' - ' . $_->{max_length}
+          : 'NA'
+    } @stats
+  ),
+  "\n";
+close $summary_fh;
 
-my $head_a   = join( "\t", @head_a );
-my $head_g   = join( "\t", @head_g );
-my $head_c   = join( "\t", @head_c );
-my $head_t   = join( "\t", @head_t );
-my $head_sum = join( "\t", @head_sum );
-
-my $tail_a   = join( "\t", @tail_a );
-my $tail_g   = join( "\t", @tail_g );
-my $tail_c   = join( "\t", @tail_c );
-my $tail_t   = join( "\t", @tail_t );
-my $tail_sum = join( "\t", @tail_sum );
-
-my $reads_count  = join( "\t", @reads_count );
-my $length_range = join( "\t", @length_range );
-
-open( my $body,        ">", $ARGV[-1] . "_body.tsv" );
-open( my $head,        ">", $ARGV[-1] . "_head.tsv" );
-open( my $tail,        ">", $ARGV[-1] . "_tail.tsv" );
-open( my $summary,     ">", $ARGV[-1] . "_summary.tsv" );
-open( my $length_dist, ">", $ARGV[-1] . "_length.tsv" );
-
-print $body ("$name\n$body_a\n$body_g\n$body_c\n$body_t\n$body_sum\n");
-
-print $head ("$name\n$head_a\n$head_g\n$head_c\n$head_t\n$head_sum\n");
-
-print $tail ("$name\n$tail_a\n$tail_g\n$tail_c\n$tail_t\n$tail_sum\n");
-
-print $summary ("$name\n$reads_count\n$length_range\n");
-
-foreach ( sort { $a cmp $b } keys %length_distribution ) {
-    print $length_dist ("$_\t$length_distribution{$_}\n");
+open my $length_fh, '>', $length_path;
+for my $sample_index ( 0 .. $#input_paths ) {
+    for my $length (
+        sort { $a <=> $b } keys %{ $stats[$sample_index]{length_dist} }
+      )
+    {
+        print {$length_fh} join(
+            "\t", $input_paths[$sample_index], $length,
+            $stats[$sample_index]{length_dist}{$length}
+          ),
+          "\n";
+    }
 }
+close $length_fh;
 
-system(
-"Rscript $dirname/draw_picture.R $ARGV[-1]_body.tsv $ARGV[-1]_head.tsv $ARGV[-1]_tail.tsv $ARGV[-1]_length.tsv $ARGV[-1]_summary.tsv $ARGV[-1].pdf"
-);
+unless ($no_plot) {
+    my $pdf_path = $output_prefix . '.pdf';
+    my $status = system(
+        'Rscript', "$Bin/draw_picture.R", $body_path, $head_path,
+        $tail_path, $length_path, $summary_path, $pdf_path,
+    );
+    die "Failed to run qc/draw_picture.R\n" if $status != 0;
+}
 
 __END__

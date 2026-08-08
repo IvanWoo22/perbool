@@ -1,33 +1,51 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
-use warnings FATAL => 'all';
-use PerlIO::gzip;
+use warnings;
+use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
+use Perbool::Fastq qw(
+  assert_distinct_paths open_fastq_reader paired_fastq_id read_fastq_record
+  sequence_text
+);
+
+die "Usage: perl qc/pe_coordinate.pl R1.fq[.gz] R2.fq[.gz]\n"
+  unless @ARGV == 2;
+my ( $r1_path, $r2_path ) = @ARGV;
+die "R1 and R2 must refer to different inputs\n" if $r1_path eq $r2_path;
+assert_distinct_paths( $r1_path, $r2_path );
 
 sub REV_COMP {
-    my $SEQ     = reverse(shift);
-    my $R_C_SEQ = $SEQ =~ tr/AGTCagtc/TCAGtcag/r;
-    return $R_C_SEQ;
+    my $sequence = reverse shift;
+    $sequence =~ tr/AGTCagtc/TCAGtcag/;
+    return $sequence;
 }
 
-open(my $r1,"<:gzip",$ARGV[0]) or die"$!";
-open(my $r2,"<:gzip",$ARGV[1]) or die"$!";
+my $r1_fh = open_fastq_reader($r1_path);
+my $r2_fh = open_fastq_reader($r2_path);
+my $record_number = 0;
 
-while (<$r1>) {
-    chomp( my $seq1 = <$r1> );
-    readline($r1);
-    readline($r1);
-    readline($r2);
-    chomp( my $seq2 = <$r2> );
-    readline($r2);
-    readline($r2);
-    my $r_c_seq2 = REV_COMP($seq2);
+while ( my $record1 = read_fastq_record( $r1_fh, $record_number + 1 ) ) {
+    $record_number++;
+    my $record2 = read_fastq_record( $r2_fh, $record_number );
+    die "Paired FASTQ files contain different numbers of records\n"
+      unless defined $record2;
+    die "Paired FASTQ read IDs do not match: "
+      . "$record1->{header}$record2->{header}"
+      unless paired_fastq_id($record1) eq paired_fastq_id($record2);
 
-    if ( ( $seq1 eq $seq2 ) or ( $seq1 eq $r_c_seq2 ) ) {
-        print "$seq1\n";
-    }
+    my $sequence1 = sequence_text($record1);
+    my $sequence2 = sequence_text($record2);
+    my $reverse2  = REV_COMP($sequence2);
+    print "$sequence1\n"
+      if $sequence1 eq $sequence2 || $sequence1 eq $reverse2;
 }
 
-close($r1);
-close($r2);
+die "Paired FASTQ files contain different numbers of records\n"
+  if defined read_fastq_record( $r2_fh, $record_number + 1 );
+
+close $r1_fh unless $r1_path eq '-';
+close $r2_fh unless $r2_path eq '-';
 
 __END__

@@ -1,32 +1,31 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
-use warnings FATAL => 'all';
+use warnings;
+use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
 
-open( my $fq, "<", $ARGV[0] ) or die "Can't open the file: $!";
+use Perbool::Fastq qw(open_fastq_reader read_fastq_record sequence_text);
 
-my ( $a_count, $g_count, $c_count, $t_count, $total_count ) = ( 0, 0, 0, 0, 0 );
-while (<$fq>) {
-    chomp( my $seq_string = <$fq> );
-    readline($fq);
-    readline($fq);
+die "Usage: perl qc/end_base.pl INPUT.fq[.gz]\n" unless @ARGV == 1;
+my $input_path = $ARGV[0];
+my $in_fh = open_fastq_reader($input_path);
+
+my %base_count = map { $_ => 0 } qw(A G C T);
+my $total_count = 0;
+while ( my $record = read_fastq_record( $in_fh, $total_count + 1 ) ) {
     $total_count++;
-    my @seq = split( //, $seq_string );
-    if ( $seq[-1] eq "A" ) {
-        $a_count++;
-    }
-    elsif ( $seq[-1] eq "G" ) {
-        $g_count++;
-    }
-    elsif ( $seq[-1] eq "C" ) {
-        $c_count++;
-    }
-    elsif ( $seq[-1] eq "T" ) {
-        $t_count++;
-    }
+    my $sequence = uc sequence_text($record);
+    next unless length $sequence;
+    my $end_base = substr( $sequence, -1, 1 );
+    $base_count{$end_base}++ if exists $base_count{$end_base};
 }
+close $in_fh unless $input_path eq '-';
 
-print(
-"A:\t$a_count\nG:\t$g_count\nC:\t$c_count\nT:\t$t_count\nTotal:\t$total_count\n"
-);
+print "A:\t$base_count{A}\n";
+print "G:\t$base_count{G}\n";
+print "C:\t$base_count{C}\n";
+print "T:\t$base_count{T}\n";
+print "Total:\t$total_count\n";
 
 __END__
