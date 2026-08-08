@@ -15,7 +15,6 @@ files continue to work.
 | `lib/Perbool/` | Reusable parsing, validation, I/O, CLI, and command logic |
 | `t/` | Behavioral regression, compatibility, and compile tests |
 | `qc/` | Compatibility entry points and optional plotting backend |
-| `RBC/` | Excluded project workflow awaiting unchanged external archival |
 | root `*.pl` | Temporary compatibility entry points |
 
 New functionality must not introduce another root-level script. Add a
@@ -33,11 +32,12 @@ helpers that can operate independently of one specific experiment or assay.
 Project workflows with hard-coded targets, assay panels, reference sequences,
 or laboratory-specific assumptions are not migrated into `Perbool::*`.
 
-`RBC/` is classified as such a project workflow. Its files must remain
-unchanged while they are prepared for separate storage, after which the whole
-directory will be removed from this toolkit rather than refactored here. It is
-therefore excluded from the CLI registry and the toolkit compile/test support
-surface.
+`RBC/` was classified as such a project workflow, archived verbatim on the
+dedicated `codex/archive-rbc-workflow` branch, and removed from the toolkit
+tree. Its original subtree and archive root share the Git tree hash
+`d7f0fd99f792f373e031ce9f1c7e8a251c0134b7`. It is excluded from the CLI
+registry and toolkit support surface; details are recorded in
+[the non-tool archive manifest](non-tool-archive.md).
 
 ## Naming contract
 

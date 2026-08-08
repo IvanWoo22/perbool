@@ -168,13 +168,14 @@ failed plot backend does not leave a partially updated report set.
 - `lib/Perbool/`: reusable parsing, validation, I/O, path, CLI, and command modules
 - `t/`: behavioral regression and compile tests
 - `qc/`: compatibility entry points and the optional QC plotting backend
-- `RBC/`: a project-specific workflow outside the toolkit scope; it is kept
-  unchanged only until it can be archived separately and removed from perbool
 - root-level `.pl` files: compatibility entry points; new tools should not be
   added here
 
 See [the CLI and directory migration guide](docs/architecture.md) for naming
 rules, current command mappings, and the staged refactoring policy.
+Project-specific RBC code was removed without modification after archival; see
+[the non-tool archive manifest](docs/non-tool-archive.md) for its recovery
+branch and verified tree hashes.
 
 ## Development
 
