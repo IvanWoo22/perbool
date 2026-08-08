@@ -2,7 +2,27 @@
 use strict;
 use warnings;
 use autodie;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 use Getopt::Long;
+
+use Perbool::Fasta qw(
+  extract_interval load_fasta_sequences reverse_complement rna_to_dna
+);
+
+=head1 NAME
+
+links2fasta.pl -- Extract FASTA sequences from compact location strings.
+
+=head1 SYNOPSIS
+
+    perl links2fasta.pl --fa genome.fa.gz --in locations.txt
+
+Locations use C<ID:START-END> or C<PREFIX.ID(-):START-END>. Multiple
+locations on one line may be separated by tabs. Coordinates are 1-based and
+inclusive; output sequences are wrapped at 70 bases.
+
+=cut
 
 Getopt::Long::GetOptions(
     'help|h' => sub { Getopt::Long::HelpMessage(0) },
@@ -11,107 +31,74 @@ Getopt::Long::GetOptions(
     'stdin'  => \my $stdin,
 ) or Getopt::Long::HelpMessage(1);
 
-sub SEQ_REV_COMP {
-    my $SEQ = reverse shift;
-    $SEQ =~ tr/Uu/Tt/;
-    return ( $SEQ =~ tr/AGCTagct/TCGAtcga/r );
-}
+die "--fa is required\n" unless defined $in_fa;
+die "Choose exactly one of --in and --stdin\n"
+  unless ( defined($in_list) ? 1 : 0 ) + ( $stdin ? 1 : 0 ) == 1;
+die "FASTA and location input cannot both use standard input\n"
+  if $in_fa eq '-' && $stdin;
 
-sub SEQ_TR_TU {
-    my $SEQ = shift;
-    return ( $SEQ =~ tr/Uu/Tt/r );
-}
-
-sub DECODE_LOCATION {
-    my $header = shift;
-    my $location_re = qr{
-        (?:(?<name>[\w_]+)[.])?
-        (?<chr>[\w-]+)
-        (?:[(](?<strand>.+)[)])?
-        :
-        (?<start>\d+)
-        [_-]?
-        (?<end>\d+)?
-    }xi;
-
-    return unless $header =~ $location_re;
-
-    my $strand = $+{strand};
-    if ( defined $strand ) {
-        $strand = '+' if $strand eq '1';
-        $strand = '-' if $strand eq '-1';
-    }
-
-    return {
-        chr    => $+{chr},
-        strand => $strand,
-        start  => $+{start},
-        end    => defined $+{end} ? $+{end} : $+{start},
-    };
-}
-
-my %fasta;
-my $title_name;
-open my $FA, "<", $in_fa;
-while (<$FA>) {
-    if (/^>(\S+)/) {
-        $title_name = $1;
-    }
-    else {
-        $_ =~ s/\r?\n//;
-        $fasta{$title_name} .= $_;
-    }
-}
-close($FA);
-
-if ( defined($in_list) ) {
-    open( my $SEG, "<", $in_list );
-    while (<$SEG>) {
-        s/\r?\n//;
-        my $seq = fetch_seq($_);
-        print $seq;
-    }
-    close($SEG);
-}
-elsif ( defined($stdin) ) {
-    while (<>) {
-        s/\r?\n//;
-        my $seq = fetch_seq($_);
-        print $seq;
-    }
+my ($fasta) = load_fasta_sequences($in_fa);
+my $location_fh;
+if ( defined $in_list ) {
+    open $location_fh, '<', $in_list;
 }
 else {
-    die("==> You should provide the FASTA!!\n");
+    $location_fh = *STDIN{IO};
 }
 
-sub fetch_seq {
-    my $line        = shift;
-    my $out_content = "";
-    for my $range ( split /\t/, $line ) {
-        my $info = DECODE_LOCATION($range);
-        next unless defined $info;
-        if ( exists( $fasta{ $info->{chr} } ) ) {
-            my $length = abs( $info->{end} - $info->{start} ) + 1;
-            my $seq =
-              substr( $fasta{ $info->{chr} }, $info->{start} - 1, $length );
-            if ( defined $info->{strand} and $info->{strand} eq "-" ) {
-                $seq = SEQ_REV_COMP($seq);
-            }
-            else {
-                $seq = SEQ_TR_TU($seq);
-            }
+my $line_number = 0;
+while ( my $line = <$location_fh> ) {
+    $line_number++;
+    $line =~ s/\r?\n\z//;
+    next if $line =~ /^\s*(?:#|\z)/;
 
-            $out_content .= ">$range\n";
-            my @lines = $seq =~ /.{1,70}/g;
-            foreach my $line_out (@lines) {
-                $out_content .= "$line_out\n";
-            }
-        }
-        else {
-            warn("Sorry, there is no such a segment: $range\n");
+    for my $range ( split /\t/, $line ) {
+        my ( $id, $start, $end, $strand ) =
+          decode_location( $range, $fasta, $line_number );
+        my $sequence = extract_interval(
+            $fasta->{$id}, $start, $end,
+            "FASTA ID '$id' at location line $line_number",
+        );
+        $sequence = $strand eq '-'
+          ? reverse_complement($sequence)
+          : rna_to_dna($sequence);
+
+        print ">$range\n";
+        while ( length $sequence ) {
+            print substr( $sequence, 0, 70, '' ), "\n";
         }
     }
-    return ($out_content);
+}
+close $location_fh if defined $in_list;
+
+sub decode_location {
+    my ( $range, $sequences, $source_line ) = @_;
+    $range =~ s/^\s+|\s+$//g;
+    my ( $raw_id, $strand, $start, $end ) =
+      $range =~ /\A(.+?)(?:\(([+-]|-?1)\))?:(\d+)(?:[_-](\d+))?\z/
+      or die "Invalid location '$range' at line $source_line\n";
+    $end = $start unless defined $end;
+    $strand = '+' unless defined $strand;
+    $strand = '+' if $strand eq '1';
+    $strand = '-' if $strand eq '-1';
+
+    my $id = $raw_id;
+    if ( !exists $sequences->{$id} ) {
+        my @parts = split /[.]/, $raw_id;
+        shift @parts;
+        while (@parts) {
+            my $candidate = join '.', @parts;
+            if ( exists $sequences->{$candidate} ) {
+                $id = $candidate;
+                last;
+            }
+            shift @parts;
+        }
+    }
+    die "Unknown FASTA ID '$raw_id' at location line $source_line\n"
+      unless exists $sequences->{$id};
+
+    return ( $id, $start, $end, $strand );
 }
 
 __END__

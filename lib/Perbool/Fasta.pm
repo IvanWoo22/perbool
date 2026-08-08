@@ -8,9 +8,13 @@ use Exporter qw(import);
 use IO::Zlib;
 
 our @EXPORT_OK = qw(
+  extract_interval
   fasta_id
   fasta_iterator
+  load_fasta_sequences
   open_fasta_reader
+  reverse_complement
+  rna_to_dna
   sequence_text
   write_fasta_record
 );
@@ -96,6 +100,53 @@ sub fasta_id {
     $record->{header} =~ /^>(\S+)/
       or die "Invalid FASTA header: $record->{header}\n";
     return $1;
+}
+
+sub load_fasta_sequences {
+    my $path = shift;
+    my $fh = open_fasta_reader($path);
+    my $next_record = fasta_iterator($fh);
+    my %sequences;
+    my @ids;
+
+    while ( my $record = $next_record->() ) {
+        my $id = fasta_id($record);
+        die "Duplicate FASTA ID: $id\n" if exists $sequences{$id};
+        $sequences{$id} = sequence_text($record);
+        push @ids, $id;
+    }
+    close $fh unless $path eq '-';
+
+    return ( \%sequences, \@ids );
+}
+
+sub rna_to_dna {
+    my $sequence = shift;
+    $sequence =~ tr/Uu/Tt/;
+    return $sequence;
+}
+
+sub reverse_complement {
+    my $sequence = reverse shift;
+    $sequence =~ tr/ACGTRYMKSWBDHVNUacgtrymkswbdhvnu/TGCAYRKMSWVHDBNAtgcayrkmswvhdbna/;
+    return $sequence;
+}
+
+sub extract_interval {
+    my ( $sequence, $start, $end, $label ) = @_;
+    $label = 'sequence' unless defined $label && length $label;
+
+    die "Interval start must be a positive integer for $label\n"
+      unless defined $start && $start =~ /\A[1-9]\d*\z/;
+    die "Interval end must be a positive integer for $label\n"
+      unless defined $end && $end =~ /\A[1-9]\d*\z/;
+
+    my ( $left, $right ) = $start <= $end ? ( $start, $end ) : ( $end, $start );
+    my $sequence_length = length $sequence;
+    die "Interval $start-$end exceeds sequence length for $label ($sequence_length)\n"
+      if $right > $sequence_length;
+
+    return substr( $sequence, $left - 1, $right - $left + 1 );
 }
 
 sub sequence_text {

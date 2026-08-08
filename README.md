@@ -33,6 +33,13 @@ perl fetch_fasta.pl \
 
 perl unique_fasta.pl input.fa.gz >unique.fa
 
+perl find_seq_from_fasta.pl \
+    --fa genome.fa.gz --seq ACGT
+
+perl pick_seq_from_fasta_neo.pl \
+    --fa genome.fa.gz --in intervals.txt \
+    >intervals.fa
+
 perl filter_fastq.pl \
     --max 30 --min 20 \
     -i input.fq -o output.fq
@@ -57,6 +64,14 @@ FASTA readers accept multiline records, and the migrated extraction and
 deduplication tools transparently read `.gz` input. `fetch_fasta.pl` searches
 header text literally by default; `--exact` instead matches the complete first
 ID after `>`.
+
+`find_seq_from_fasta.pl` reports the FASTA ID and 1-based inclusive end
+coordinate for every literal match, including overlaps, in FASTA record order.
+Interval files for `pick_seq_from_fasta_neo.pl` contain
+`FASTA_ID START END STRAND [NAME]`; coordinates are 1-based and inclusive,
+either coordinate order is accepted, and invalid or out-of-range intervals are
+rejected instead of silently truncated. The older two-argument
+`pick_seq_from_fasta.pl` command remains available as a compatibility wrapper.
 
 ## Development
 
