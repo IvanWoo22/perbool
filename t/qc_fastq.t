@@ -70,6 +70,14 @@ is(
     'plain and gzip end-base counts are identical',
 );
 
+my ( $normalized_end_status, $normalized_end_output, $normalized_end_error ) =
+  run_command(
+    undef, 'bin/perbool', 'qc', 'end-bases', '--in', $qc_gzip_path,
+  );
+is( $normalized_end_status, 0, 'normalized end-base command exits successfully' );
+is( $normalized_end_error, '', 'normalized end-base command emits no errors' );
+is( $normalized_end_output, $end_output, 'normalized and legacy end-base counts agree' );
+
 my ( $length_status, $length_output, $length_error ) =
   run_command( $qc_content, $^X, 'qc/length_distribution.pl' );
 is( $length_status, 0, 'length distribution exits successfully' );
@@ -80,14 +88,24 @@ is(
     'length distribution is numerically sorted and correctly counted',
 );
 
+my ( $normalized_length_status, $normalized_length_output,
+    $normalized_length_error ) = run_command(
+    undef, 'bin/perbool', 'qc', 'lengths', '--in', $qc_gzip_path,
+);
+is( $normalized_length_status, 0, 'normalized length command reads gzip input' );
+is( $normalized_length_error, '', 'normalized length command emits no errors' );
+is( $normalized_length_output, $length_output, 'normalized and legacy lengths agree' );
+
 my $r1_content =
     "\@pair1/1\nAAA\n+\nIII\n"
   . "\@pair2/1\nACG\n+\nJJJ\n"
-  . "\@pair3/1\nTTT\n+\nKKK\n";
+  . "\@pair3/1\nTTT\n+\nKKK\n"
+  . "\@pair4/1\nARY\n+\nLLL\n";
 my $r2_content =
     "\@pair1/2\nAAA\n+\nIII\n"
   . "\@pair2/2\nCGT\n+\nJJJ\n"
-  . "\@pair3/2\nCCC\n+\nKKK\n";
+  . "\@pair3/2\nCCC\n+\nKKK\n"
+  . "\@pair4/2\nRYT\n+\nLLL\n";
 my $r1_path = path_for('R1.fq');
 my $r2_path = path_for('R2.fq');
 write_text( $r1_path, $r1_content );
@@ -99,9 +117,26 @@ is( $pair_status, 0, 'paired-coordinate comparison exits successfully' );
 is( $pair_error,  '', 'paired-coordinate comparison emits no errors' );
 is(
     $pair_output,
-    "AAA\nACG\n",
-    'paired-coordinate comparison finds identical and reverse-complement reads',
+    "AAA\nACG\nARY\n",
+    'paired-coordinate comparison finds identical and IUPAC reverse-complement reads',
 );
+
+my ( $normalized_pair_status, $normalized_pair_output,
+    $normalized_pair_error ) = run_command(
+    undef, 'bin/perbool', 'qc', 'paired-coordinates',
+    '--r1', $r1_path, '--r2', $r2_path,
+);
+is( $normalized_pair_status, 0, 'normalized paired-coordinate command exits successfully' );
+is( $normalized_pair_error, '', 'normalized paired-coordinate command emits no errors' );
+is( $normalized_pair_output, $pair_output, 'normalized and legacy paired results agree' );
+
+my ( $stdin_pair_status, $stdin_pair_output, $stdin_pair_error ) = run_command(
+    $r1_content, 'bin/perbool', 'qc', 'paired-coordinates',
+    '--r1', '-', '--r2', $r2_path,
+);
+is( $stdin_pair_status, 0, 'one paired input may use standard input' );
+is( $stdin_pair_error, '', 'standard-input paired comparison emits no errors' );
+is( $stdin_pair_output, $pair_output, 'standard-input paired result is correct' );
 
 my $r1_gzip = path_for('R1.fq.gz');
 my $r2_gzip = path_for('R2.fq.gz');
@@ -118,10 +153,14 @@ is(
 );
 
 my $bad_r2_path = path_for('bad.R2.fq');
-write_text( $bad_r2_path, "\@other/2\nAAA\n+\nIII\n" );
-my ( $bad_pair_status, undef, $bad_pair_error ) =
+write_text(
+    $bad_r2_path,
+    "\@pair1/2\nAAA\n+\nIII\n\@other/2\nCGT\n+\nJJJ\n",
+);
+my ( $bad_pair_status, $bad_pair_output, $bad_pair_error ) =
   run_command( undef, $^X, 'qc/pe_coordinate.pl', $r1_path, $bad_r2_path );
 isnt( $bad_pair_status, 0, 'paired-coordinate comparison rejects ID mismatch' );
+is( $bad_pair_output, '', 'later paired-coordinate error produces no partial output' );
 like(
     $bad_pair_error,
     qr/(?:different numbers|IDs do not match)/,
@@ -137,5 +176,13 @@ like(
     qr/Sequence and quality lengths differ/,
     'malformed FASTQ reports the failing invariant',
 );
+
+my ( $stdin_conflict_status, $stdin_conflict_output, $stdin_conflict_error ) =
+  run_command(
+    '', 'bin/perbool', 'qc', 'paired-coordinates', '--r1', '-', '--r2', '-',
+  );
+isnt( $stdin_conflict_status, 0, 'two paired standard-input paths are rejected' );
+is( $stdin_conflict_output, '', 'paired standard-input conflict produces no output' );
+like( $stdin_conflict_error, qr/Only one paired input/, 'paired input conflict is clear' );
 
 done_testing();

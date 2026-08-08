@@ -7,7 +7,7 @@ use Test::More;
 my @sources;
 find(
     sub {
-        if ( -d $_ && /\A(?:[.]git|local|blib|_build|cover_db)\z/ ) {
+        if ( -d $_ && /\A(?:[.]git|RBC|local|blib|_build|cover_db)\z/ ) {
             $File::Find::prune = 1;
             return;
         }

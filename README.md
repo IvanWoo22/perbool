@@ -90,6 +90,9 @@ perbool fastq split-kmers \
 perbool fastq sample \
     -q 100 --without-replacement --seed 42 \
     -i test.fq -o test.out.fq
+
+perbool qc summary --no-plot --out-prefix qc/sample \
+    sample_R1.fq.gz sample_R2.fq.gz
 ```
 
 `perbool fastq sample` (legacy entry point: `fastq_randomsampling.pl`) samples
@@ -153,12 +156,20 @@ the current year. All searches must succeed before the output file is opened,
 so a failed batch preserves any existing result. `RISmed` and `Rscript` are
 required only for this optional command.
 
+The `qc` command group shares one validated FASTQ statistics implementation.
+`qc end-bases` and `qc lengths` accept `--in`, while
+`qc paired-coordinates` accepts `--r1` and `--r2`. `qc summary` stages all TSV
+and optional PDF outputs before replacing final files, so malformed FASTQ or a
+failed plot backend does not leave a partially updated report set.
+
 ## Project layout
 
 - `bin/perbool`: normalized user-facing command entry point
 - `lib/Perbool/`: reusable parsing, validation, I/O, path, CLI, and command modules
 - `t/`: behavioral regression and compile tests
-- `qc/` and `RBC/`: domain-specific legacy tools being migrated in stages
+- `qc/`: compatibility entry points and the optional QC plotting backend
+- `RBC/`: a project-specific workflow outside the toolkit scope; it is kept
+  unchanged only until it can be archived separately and removed from perbool
 - root-level `.pl` files: compatibility entry points; new tools should not be
   added here
 

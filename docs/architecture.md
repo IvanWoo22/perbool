@@ -14,7 +14,8 @@ files continue to work.
 | `bin/perbool` | Stable user-facing CLI and command dispatch |
 | `lib/Perbool/` | Reusable parsing, validation, I/O, CLI, and command logic |
 | `t/` | Behavioral regression, compatibility, and compile tests |
-| `qc/`, `RBC/` | Domain-specific tools awaiting or undergoing migration |
+| `qc/` | Compatibility entry points and optional plotting backend |
+| `RBC/` | Excluded project workflow awaiting unchanged external archival |
 | root `*.pl` | Temporary compatibility entry points |
 
 New functionality must not introduce another root-level script. Add a
@@ -24,6 +25,19 @@ module, and cover the command through `t/`.
 Command implementations being migrated live below `lib/Perbool/Command/`;
 their historical root scripts contain only argument forwarding and module
 loading.
+
+## Scope boundary
+
+perbool contains reusable command-line tools, parsers, validators, and report
+helpers that can operate independently of one specific experiment or assay.
+Project workflows with hard-coded targets, assay panels, reference sequences,
+or laboratory-specific assumptions are not migrated into `Perbool::*`.
+
+`RBC/` is classified as such a project workflow. Its files must remain
+unchanged while they are prepared for separate storage, after which the whole
+directory will be removed from this toolkit rather than refactored here. It is
+therefore excluded from the CLI registry and the toolkit compile/test support
+surface.
 
 ## Naming contract
 
