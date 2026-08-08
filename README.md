@@ -112,6 +112,11 @@ The same validated-output behavior covers `split-kmers`, `sample`, and
 `single-to-paired`; the latter accepts normalized `--r1`/`--r2` names while
 retaining `--R1`/`--R2` and `-1`/`-2` compatibility aliases.
 
+Normalized FASTA commands accept `--out` for validated plain or gzip file
+output while retaining standard output as the default. Query, interval, and
+compact-location lists also support gzip input. Existing output files are left
+unchanged when a malformed later FASTA record, interval, or location is found.
+
 Commands with option-based interfaces support `--help`; positional commands
 show a concise usage error when invoked without their required arguments.
 

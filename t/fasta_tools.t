@@ -26,12 +26,30 @@ sub write_text {
     close $fh;
 }
 
+sub read_text {
+    my $path = shift;
+    open my $fh, '<', $path or die "Cannot read $path: $!";
+    my $content = do { local $/; <$fh> };
+    close $fh;
+    return $content;
+}
+
 sub write_gzip {
     my ( $path, $content ) = @_;
     my $fh = IO::Zlib->new( $path, 'wb9' )
       or die "Cannot write $path: $!";
     print {$fh} $content;
     close $fh;
+}
+
+sub read_gzip {
+    my $path = shift;
+    my $fh = IO::Zlib->new( $path, 'rb' )
+      or die "Cannot read $path: $!";
+    my $content = '';
+    $content .= $_ while <$fh>;
+    close $fh;
+    return $content;
 }
 
 sub run_command {
@@ -172,6 +190,37 @@ is( $unique_gzip_status, 0, 'FASTA deduplication accepts gzip input' );
 is( $unique_gzip_error,  '', 'gzip deduplication emits no errors' );
 is( $unique_gzip_output, $unique_output, 'gzip and plain deduplication agree' );
 
+my $normalized_fetch_path = path_for('normalized-fetch.fa.gz');
+is(
+    system(
+        'bin/perbool', 'fasta', 'fetch', '--fasta', $plain_path,
+        '--string', 'seq1', '--exact', '--rna2dna',
+        '--out', $normalized_fetch_path,
+    ),
+    0,
+    'normalized FASTA fetch writes gzip output successfully',
+);
+is(
+    read_gzip($normalized_fetch_path),
+    $exact_output,
+    'normalized FASTA fetch agrees with the legacy interface',
+);
+
+my $normalized_unique_path = path_for('normalized-unique.fa.gz');
+is(
+    system(
+        'bin/perbool', 'fasta', 'unique', '--in', $gzip_path,
+        '--out', $normalized_unique_path,
+    ),
+    0,
+    'normalized FASTA deduplication accepts option-based gzip I/O',
+);
+is(
+    read_gzip($normalized_unique_path),
+    $unique_output,
+    'normalized FASTA deduplication agrees with the positional interface',
+);
+
 my $invalid_path = path_for('invalid.fa');
 write_text( $invalid_path, "not-a-header\nACGT\n" );
 my ( $invalid_status, undef, $invalid_error ) =
@@ -181,6 +230,39 @@ like(
     $invalid_error,
     qr/before the first header/,
     'FASTA deduplication reports malformed input clearly',
+);
+
+my $late_invalid_path = path_for('late-invalid.fa');
+write_text( $late_invalid_path, ">valid\nACGT\n>empty\n" );
+my $preserved_fetch_path = path_for('preserved-fetch.fa');
+my $preserved_unique_path = path_for('preserved-unique.fa');
+write_text( $preserved_fetch_path, "preserved fetched output\n" );
+write_text( $preserved_unique_path, "preserved unique output\n" );
+isnt(
+    system(
+        'bin/perbool', 'fasta', 'fetch', '--fasta', $late_invalid_path,
+        '--string', 'valid', '--out', $preserved_fetch_path,
+    ),
+    0,
+    'FASTA fetch rejects an empty later record',
+);
+is(
+    read_text($preserved_fetch_path),
+    "preserved fetched output\n",
+    'failed FASTA fetch preserves an existing output file',
+);
+isnt(
+    system(
+        'bin/perbool', 'fasta', 'unique', '--in', $late_invalid_path,
+        '--out', $preserved_unique_path,
+    ),
+    0,
+    'FASTA deduplication rejects an empty later record',
+);
+is(
+    read_text($preserved_unique_path),
+    "preserved unique output\n",
+    'failed FASTA deduplication preserves an existing output file',
 );
 
 my ( $argument_status, undef, $argument_error ) =

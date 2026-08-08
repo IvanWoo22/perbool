@@ -52,6 +52,22 @@ for my $row (@rows) {
     like( $row->[1], qr/\A[a-z][a-z0-9-]*\z/, 'command name is normalized' );
     ok( !$command_name{ "$row->[0] $row->[1]" }++, 'group-command pair is unique' );
     ok( -f $row->[2], 'mapped implementation exists' );
+    my $wrapper = read_text( $row->[2] );
+    my @wrapper_lines = split /\n/, $wrapper;
+    cmp_ok(
+        scalar @wrapper_lines, '<=', 12,
+        "$row->[0] $row->[1] uses a thin compatibility wrapper",
+    );
+    like(
+        $wrapper,
+        qr/^use Perbool::Command::[A-Za-z0-9:]+ qw\(run\);$/m,
+        "$row->[0] $row->[1] loads command logic from a module",
+    );
+    like(
+        $wrapper,
+        qr/^exit run\s*\(/m,
+        "$row->[0] $row->[1] delegates execution to the module",
+    );
 }
 
 my ( $help_status, $help_output, $help_error ) =
