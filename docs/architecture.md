@@ -55,6 +55,7 @@ loading.
 | `perbool table count-duplicates` | `count_duplication.pl` |
 | `perbool genome bed-to-yaml` | `bed2yml.pl` |
 | `perbool genome transcript-coordinate` | `coordinate_position.pl` |
+| `perbool small-rna tail-counts` | `mirna_count.pl` |
 | `perbool fastq fetch` | `fetch_fastq.pl` |
 | `perbool fastq delete` | `delete_fastq.pl` |
 | `perbool fastq filter` | `filter_fastq.pl` |

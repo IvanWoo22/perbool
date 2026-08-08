@@ -71,6 +71,10 @@ perbool genome transcript-coordinate \
     --transcript ENST00000335137.4 --position 120 \
     --in transcript_ranges.tsv.gz
 
+perbool small-rna tail-counts \
+    --counts collapsed_reads.tsv.gz --fasta mature_mirna.fa.gz \
+    >mirna_tail_counts.tsv
+
 perbool fastq filter \
     --max 30 --min 20 \
     -i input.fq -o output.fq
@@ -131,6 +135,12 @@ of supplied exon/UTR ranges to its genomic coordinate. Its five-column input is
 `REFERENCE START END STRAND GFF_ATTRIBUTES`; coordinates are 1-based inclusive,
 negative-strand transcripts are traversed from high to low genomic coordinate,
 and comma-separated `Parent=transcript:ID` values are supported.
+
+`perbool small-rna tail-counts` reports the exact read count and poly(A)-tailed
+read count for each FASTA reference. It accepts multiline or gzip FASTA and
+count tables, merges duplicate read-sequence rows case-insensitively, and uses
+literal prefix matching. The output retains the historical three-column form:
+complete FASTA header, exact count, and poly(A)-tail count.
 
 ## Project layout
 

@@ -25,6 +25,7 @@ my @COMMANDS = (
     [ table => 'count-duplicates','count_duplication.pl', 'bin distinct lines by frequency' ],
     [ genome => 'bed-to-yaml', 'bed2yml.pl', 'merge BED intervals into YAML run lists' ],
     [ genome => 'transcript-coordinate', 'coordinate_position.pl', 'map transcript to genomic coordinates' ],
+    [ 'small-rna' => 'tail-counts', 'mirna_count.pl', 'count exact and poly(A)-tailed reads' ],
     [ fastq => 'fetch',             'fetch_fastq.pl',             'fetch reads by ID list' ],
     [ fastq => 'delete',            'delete_fastq.pl',            'delete reads by ID list' ],
     [ fastq => 'filter',            'filter_fastq.pl',            'filter single-end reads by length' ],
