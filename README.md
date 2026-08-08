@@ -50,6 +50,16 @@ perbool fasta extract-intervals \
 perbool fasta delete \
     --name remove.txt --in input.fa.gz --out retained.fa.gz
 
+perbool fasta substitute \
+    --fa reference.fa.gz --in variants.txt \
+    >alternate_sequences.fa
+
+perbool fasta filter-composition \
+    --base A --fraction-above 0.6 --in input.fa.gz \
+    >a_rich.fa
+
+perbool sequence reverse-complement ACGTRYMK
+
 perbool fastq filter \
     --max 30 --min 20 \
     -i input.fq -o output.fq
@@ -88,6 +98,12 @@ Interval files for `pick_seq_from_fasta_neo.pl` contain
 either coordinate order is accepted, and invalid or out-of-range intervals are
 rejected instead of silently truncated. The older two-argument
 `pick_seq_from_fasta.pl` command remains available as a compatibility wrapper.
+
+`perbool fasta substitute` consumes `FASTA_ID POSITION REF ALT` rows, validates
+the complete batch before writing, and emits one independent alternate record
+per row. `perbool fasta filter-composition` uses canonical A/C/G/T bases as its
+denominator and ignores ambiguity symbols. Its threshold comparison is strict
+(`fraction > threshold`).
 
 ## Project layout
 

@@ -145,7 +145,7 @@ sub rna_to_dna {
 
 sub reverse_complement {
     my $sequence = reverse shift;
-    $sequence =~ tr/ACGTRYMKSWBDHVNUacgtrymkswbdhvnu/TGCAYRKMSWVHDBNAtgcayrkmswvhdbna/;
+    $sequence =~ tr/ACGTRYMKSWBDHVNUXacgtrymkswbdhvnux/TGCAYRKMSWVHDBNAXtgcayrkmswvhdbnax/;
     return $sequence;
 }
 

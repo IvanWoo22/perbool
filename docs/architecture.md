@@ -46,6 +46,9 @@ loading.
 | `perbool fasta extract-intervals` | `pick_seq_from_fasta_neo.pl` |
 | `perbool fasta extract-locations` | `links2fasta.pl` |
 | `perbool fasta from-list` | `list2fasta.pl` |
+| `perbool fasta substitute` | `snp4fasta.pl` |
+| `perbool fasta filter-composition` | `base_proportion.pl` |
+| `perbool sequence reverse-complement` | `rcdna.pl` |
 | `perbool fastq fetch` | `fetch_fastq.pl` |
 | `perbool fastq delete` | `delete_fastq.pl` |
 | `perbool fastq filter` | `filter_fastq.pl` |

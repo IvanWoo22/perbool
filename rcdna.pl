@@ -1,18 +1,9 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
-my $dna=shift @ARGV;
-my $rcdna= & reverse_complement_IUPAC($dna);
-print "$rcdna\n";
+use warnings;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 
-sub reverse_complement_IUPAC {
-        my $dna = shift;
+use Perbool::Command::ReverseComplement qw(run);
 
-        # reverse the DNA sequence
-        my $revcomp = reverse($dna);
-
-        # complement the reversed DNA sequence
-        $revcomp =~ tr/ABCDGHMNRSTUVWXYabcdghmnrstuvwxy/TVGHCDKNYSAABWXRtvghcdknysaabwxr/;
-        return $revcomp;
-}
-
-__END__
+exit run(@ARGV);
